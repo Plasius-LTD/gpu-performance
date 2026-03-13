@@ -117,6 +117,7 @@ import {
   createDeviceProfile,
   createGpuPerformanceGovernor,
   createWorkerJobBudgetAdapter,
+  createWorkerJobBudgetAdaptersFromManifest,
 } from "@plasius/gpu-performance";
 
 const device = createDeviceProfile({
@@ -163,12 +164,36 @@ const decision = governor.recordFrame({ frameTimeMs: 19.2 });
 console.log(decision.adjustments, postProcessingJobs.getBudget());
 ```
 
+If an adopting package already exposes worker manifests, convert those manifests
+directly into adapters instead of rebuilding the same ladders by hand.
+
+```ts
+import { createWorkerJobBudgetAdaptersFromManifest } from "@plasius/gpu-performance";
+import { getLightingTechniqueWorkerManifest } from "@plasius/gpu-lighting";
+
+const manifest = getLightingTechniqueWorkerManifest("hybrid");
+const adapters = createWorkerJobBudgetAdaptersFromManifest(manifest, {
+  initialLevels: {
+    "lighting.direct": "medium",
+  },
+  selectJob(job) {
+    return job.performance.importance !== "critical";
+  },
+});
+
+const governor = createGpuPerformanceGovernor({
+  device,
+  modules: adapters,
+});
+```
+
 ## API
 
 - `createDeviceProfile(input)`
 - `negotiateFrameTarget(options)`
 - `createQualityLadderAdapter(options)`
 - `createWorkerJobBudgetAdapter(options)`
+- `createWorkerJobBudgetAdaptersFromManifest(manifest, options?)`
 - `createGpuPerformanceGovernor(options)`
 - `createPerformanceGovernor(options)` alias
 
@@ -258,6 +283,7 @@ npm run pack:check
 - `src/device.ts`: device profile normalization and frame-target negotiation.
 - `src/ladder.ts`: generic quality ladder adapters for GPU-facing modules.
 - `src/governor.ts`: trend-aware control loop and module orchestration.
+- `src/worker.ts`: worker-job budget adapters and consumer-manifest helpers.
 - `src/validation.ts`: shared runtime input validation helpers.
 - `src/worker.ts`: worker-job budget adapters for `@plasius/gpu-worker`
   integrations.

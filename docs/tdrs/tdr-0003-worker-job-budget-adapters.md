@@ -44,17 +44,29 @@ worker-specific metadata:
 The adapter continues to satisfy the generic `PerformanceModuleAdapter`
 contract, so the existing governor does not need a second control path.
 
+For adopting packages that already emit worker manifests, the package also
+provides `createWorkerJobBudgetAdaptersFromManifest(manifest, options?)`. This
+factory converts manifest job entries into the same adapter contract so
+consumers do not duplicate ladder wiring across `gpu-lighting`,
+`gpu-particles`, and future effect packages.
+
 ## Data Contracts
 
 - `WorkerJobQueueClass`
 - `WorkerJobBudgetConfig`
 - `WorkerJobBudgetAdapterOptions`
+- `WorkerJobBudgetManifestPerformance`
+- `WorkerJobBudgetManifestJob`
+- `WorkerJobBudgetManifest`
+- `WorkerJobBudgetManifestAdapterOptions`
 - `WorkerJobBudgetSnapshot`
 - `WorkerJobBudgetAdapter`
 
 ## Operational Considerations
 
 - Reliability: invalid job budget definitions fail fast at creation time.
+- Maintainability: consumer packages can publish stable manifest data and reuse
+  one manifest-to-adapter factory instead of rebuilding local adapter glue.
 - Observability: adapters expose stable `jobType` and `queueClass` values for
   local debugging and analytics routing.
 - Security: only numeric budget values and bounded identifiers are accepted.

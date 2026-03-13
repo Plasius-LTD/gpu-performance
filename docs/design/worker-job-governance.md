@@ -49,6 +49,11 @@ Each future `@plasius/gpu-*` compute package should provide:
 - optional debug event emission points consumable by `@plasius/gpu-debug`,
 - package-local translation from selected budget level to actual dispatch logic.
 
+When a package emits those ladders as manifest data, callers should prefer
+`createWorkerJobBudgetAdaptersFromManifest(...)` over rebuilding the adapter
+definitions manually. This keeps early adopters such as `gpu-lighting` and
+`gpu-particles` aligned on one integration path.
+
 ## Observability Notes
 
 Portable WebGPU does not guarantee direct access to total GPU memory or core

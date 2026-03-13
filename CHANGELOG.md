@@ -16,6 +16,8 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
   - NFR compliance documentation covering validation, reliability, and observability controls.
   - Worker-job budget adapters so `@plasius/gpu-*` packages can expose
     `@plasius/gpu-worker` scheduling budgets through the governor.
+  - A manifest-to-adapter helper for adopting `gpu-*` packages that already
+    publish worker governance manifests.
 
 - **Changed**
   - Documented `@plasius/analytics` as the required analytics/export path for governor telemetry instead of defining package-local analytics behavior.
@@ -23,6 +25,8 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
   - Hardened runtime validation, error isolation, and idempotent frame handling to align the governor with the package NFR baseline.
   - Documented worker-job-first governance as the preferred adaptation pattern
     for current and future compute-heavy `@plasius/gpu-*` packages.
+  - Expanded worker-governance guidance with a first-consumer manifest adoption
+    path for lighting and particle packages.
   - Updated package maintenance guidance to use the Node 24 baseline reflected in
     `.nvmrc`.
 

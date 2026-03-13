@@ -2,6 +2,9 @@ import { createQualityLadderAdapter } from "./ladder.js";
 import type {
   ModuleQualityLevel,
   WorkerJobBudgetAdapter,
+  WorkerJobBudgetManifest,
+  WorkerJobBudgetManifestAdapterOptions,
+  WorkerJobBudgetManifestJob,
   WorkerJobBudgetAdapterOptions,
   WorkerJobBudgetConfig,
   WorkerJobBudgetSnapshot,
@@ -98,6 +101,47 @@ function normalizeBudgetLevel(
   };
 }
 
+function normalizeManifestJobs(
+  manifest: WorkerJobBudgetManifest | readonly WorkerJobBudgetManifestJob[]
+): readonly WorkerJobBudgetManifestJob[] {
+  if (Array.isArray(manifest)) {
+    return manifest;
+  }
+
+  if (!isPlainObject(manifest) || !Array.isArray(manifest.jobs)) {
+    throw new Error(
+      "Worker job manifests must provide a jobs array or be an array of jobs."
+    );
+  }
+
+  return manifest.jobs;
+}
+
+function resolveManifestJobType(job: WorkerJobBudgetManifestJob, index: number): string {
+  const jobType = job.performance?.jobType ?? job.worker?.jobType;
+  if (typeof jobType !== "string") {
+    throw new Error(
+      `Manifest job ${index} must provide performance.jobType or worker.jobType.`
+    );
+  }
+
+  return assertIdentifier(`jobs[${index}].jobType`, jobType);
+}
+
+function resolveManifestQueueClass(
+  job: WorkerJobBudgetManifestJob,
+  index: number
+): WorkerJobBudgetAdapter["queueClass"] {
+  const queueClass = job.performance?.queueClass ?? job.worker?.queueClass;
+  if (queueClass === undefined) {
+    throw new Error(
+      `Manifest job ${index} must provide performance.queueClass or worker.queueClass.`
+    );
+  }
+
+  return assertEnumValue(`jobs[${index}].queueClass`, queueClass, workerJobQueueClasses);
+}
+
 /**
  * Creates a ladder-backed adapter specialized for gpu-worker job budgets.
  */
@@ -137,4 +181,48 @@ export function createWorkerJobBudgetAdapter(
     },
     getWorkerSnapshot,
   };
+}
+
+/**
+ * Creates worker budget adapters from a consumer worker-manifest shape.
+ */
+export function createWorkerJobBudgetAdaptersFromManifest(
+  manifest: WorkerJobBudgetManifest | readonly WorkerJobBudgetManifestJob[],
+  options: WorkerJobBudgetManifestAdapterOptions = {}
+): readonly WorkerJobBudgetAdapter[] {
+  const jobs = normalizeManifestJobs(manifest);
+  const { initialLevels, selectJob, onLevelChange } = options;
+
+  return jobs.flatMap((job, index) => {
+    if (selectJob && !selectJob(job, index)) {
+      return [];
+    }
+
+    if (!isPlainObject(job.performance)) {
+      throw new Error(`Manifest job ${index} must provide a performance object.`);
+    }
+
+    const id = assertIdentifier(`jobs[${index}].performance.id`, job.performance.id);
+    const jobType = resolveManifestJobType(job, index);
+    const queueClass = resolveManifestQueueClass(job, index);
+
+    return [
+      createWorkerJobBudgetAdapter({
+        id,
+        jobType,
+        queueClass,
+        domain: job.performance.domain,
+        authority: job.performance.authority,
+        importance: job.performance.importance,
+        levels: job.performance.levels,
+        initialLevel: initialLevels?.[id],
+        onLevelChange:
+          onLevelChange === undefined
+            ? undefined
+            : (event) => {
+                onLevelChange(job, event);
+              },
+      }),
+    ];
+  });
 }

@@ -308,6 +308,55 @@ export interface WorkerJobBudgetAdapterOptions {
 }
 
 /**
+ * Manifest-friendly description of a worker job budget.
+ */
+export interface WorkerJobBudgetManifestPerformance {
+  id: string;
+  jobType?: string;
+  queueClass?: WorkerJobQueueClass;
+  domain?: PerformanceDomain;
+  authority?: ModuleAuthority;
+  importance?: ModuleImportance;
+  levels: readonly ModuleQualityLevel<WorkerJobBudgetConfig>[];
+}
+
+/**
+ * Single worker job entry emitted by adopting gpu-* packages.
+ */
+export interface WorkerJobBudgetManifestJob {
+  key?: string;
+  label?: string;
+  worker?: {
+    jobType?: string;
+    queueClass?: WorkerJobQueueClass;
+  };
+  performance: WorkerJobBudgetManifestPerformance;
+  debug?: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * Top-level worker manifest emitted by adopting gpu-* packages.
+ */
+export interface WorkerJobBudgetManifest {
+  schemaVersion?: number;
+  owner?: string;
+  queueClass?: WorkerJobQueueClass;
+  jobs: readonly WorkerJobBudgetManifestJob[];
+}
+
+/**
+ * Options for converting a consumer worker manifest into budget adapters.
+ */
+export interface WorkerJobBudgetManifestAdapterOptions {
+  initialLevels?: Readonly<Record<string, number | string>>;
+  selectJob?: (job: WorkerJobBudgetManifestJob, index: number) => boolean;
+  onLevelChange?: (
+    job: WorkerJobBudgetManifestJob,
+    event: QualityLadderChangeEvent<WorkerJobBudgetConfig>
+  ) => void;
+}
+
+/**
  * Snapshot of a worker-job budget adapter.
  */
 export interface WorkerJobBudgetSnapshot
