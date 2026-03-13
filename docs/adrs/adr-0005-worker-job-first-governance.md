@@ -28,6 +28,9 @@ current and future `@plasius/gpu-*` compute packages.
 
 - Packages that execute work through `@plasius/gpu-worker` should expose stable
   worker job types and laddered budget configs.
+- When packages describe DAG-shaped work, manifests should also expose stable
+  node labels, dependency edges, and priorities so the shared graph helper can
+  derive roots, dependents, and ready-queue lanes.
 - `@plasius/gpu-performance` will continue to classify pressure and rank
   degradations, but package integrations should prefer worker-job budget
   adapters over bespoke local control loops.

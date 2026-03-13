@@ -38,9 +38,18 @@ publish:
 - `schedulerMode`
 - `priority`
 - `dependencies`
+- stable labels that act as DAG node ids
 
 Those values stay package-owned so the governor can preserve ordering metadata
 without taking ownership of queue internals.
+
+`createWorkerJobBudgetManifestGraph(...)` is the normalization step for that
+data. It derives:
+
+- roots for initial runnable work
+- downstream `dependents`
+- `priorityLanes` for ready-queue planning
+- stable topological order for validation and tooling
 
 ## Adaptation Policy
 
@@ -61,9 +70,10 @@ Each future `@plasius/gpu-*` compute package should provide:
 - package-local translation from selected budget level to actual dispatch logic.
 
 When a package emits those ladders as manifest data, callers should prefer
+`createWorkerJobBudgetManifestGraph(...)` and
 `createWorkerJobBudgetAdaptersFromManifest(...)` over rebuilding the adapter
-definitions manually. This keeps early adopters such as `gpu-lighting` and
-`gpu-particles` aligned on one integration path.
+definitions manually. This keeps early adopters such as `gpu-lighting`,
+`gpu-particles`, and `gpu-physics` aligned on one integration path.
 
 ## Observability Notes
 

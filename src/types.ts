@@ -306,6 +306,7 @@ export interface WorkerJobBudgetAdapterOptions {
   queueClass?: WorkerJobQueueClass;
   priority?: number;
   dependencies?: readonly string[];
+  dependents?: readonly string[];
   schedulerMode?: WorkerSchedulerMode;
   domain?: PerformanceDomain;
   authority?: ModuleAuthority;
@@ -369,6 +370,50 @@ export interface WorkerJobBudgetManifestAdapterOptions {
 }
 
 /**
+ * Normalized DAG node derived from a worker manifest.
+ */
+export interface WorkerJobBudgetManifestGraphJob {
+  id: string;
+  key?: string;
+  label?: string;
+  jobType: string;
+  queueClass: WorkerJobQueueClass;
+  priority: number;
+  dependencies: readonly string[];
+  dependents: readonly string[];
+  dependencyCount: number;
+  unresolvedDependencyCount: number;
+  dependentCount: number;
+  root: boolean;
+  schedulerMode: WorkerSchedulerMode;
+}
+
+/**
+ * Priority lane summary derived from a worker manifest DAG.
+ */
+export interface WorkerJobBudgetManifestPriorityLane {
+  priority: number;
+  jobIds: readonly string[];
+  rootJobIds: readonly string[];
+  jobCount: number;
+  rootCount: number;
+}
+
+/**
+ * Normalized DAG summary derived from a worker manifest.
+ */
+export interface WorkerJobBudgetManifestGraph {
+  schedulerMode: WorkerSchedulerMode;
+  jobCount: number;
+  maxPriority: number;
+  jobIds: readonly string[];
+  roots: readonly string[];
+  topologicalOrder: readonly string[];
+  priorityLanes: readonly WorkerJobBudgetManifestPriorityLane[];
+  jobs: readonly WorkerJobBudgetManifestGraphJob[];
+}
+
+/**
  * Snapshot of a worker-job budget adapter.
  */
 export interface WorkerJobBudgetSnapshot
@@ -377,6 +422,11 @@ export interface WorkerJobBudgetSnapshot
   queueClass: WorkerJobQueueClass;
   priority: number;
   dependencies: readonly string[];
+  dependents: readonly string[];
+  dependencyCount: number;
+  unresolvedDependencyCount: number;
+  dependentCount: number;
+  root: boolean;
   schedulerMode: WorkerSchedulerMode;
 }
 
@@ -389,6 +439,11 @@ export interface WorkerJobBudgetAdapter
   queueClass: WorkerJobQueueClass;
   priority: number;
   dependencies: readonly string[];
+  dependents: readonly string[];
+  dependencyCount: number;
+  unresolvedDependencyCount: number;
+  dependentCount: number;
+  root: boolean;
   schedulerMode: WorkerSchedulerMode;
   getBudget(): WorkerJobBudgetConfig;
   getWorkerSnapshot(): WorkerJobBudgetSnapshot;

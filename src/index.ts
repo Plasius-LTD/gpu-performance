@@ -7,6 +7,7 @@ export {
 export { createQualityLadderAdapter } from "./ladder.js";
 export {
   createWorkerJobBudgetAdapter,
+  createWorkerJobBudgetManifestGraph,
   createWorkerJobBudgetAdaptersFromManifest,
 } from "./worker.js";
 export type * from "./types.js";

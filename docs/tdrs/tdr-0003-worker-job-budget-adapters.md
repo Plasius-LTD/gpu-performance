@@ -55,6 +55,17 @@ factory converts manifest job entries into the same adapter contract so
 consumers do not duplicate ladder wiring across `gpu-lighting`,
 `gpu-particles`, and future effect packages.
 
+For callers that need explicit multi-root DAG metadata before adaptation, the
+package also provides `createWorkerJobBudgetManifestGraph(manifest)`. That
+helper derives:
+
+- stable `jobIds`
+- `roots`
+- `topologicalOrder`
+- `priorityLanes`
+- per-job `dependents`, `dependencyCount`, `unresolvedDependencyCount`, and
+  `dependentCount`
+
 ## Data Contracts
 
 - `WorkerJobQueueClass`
@@ -64,6 +75,9 @@ consumers do not duplicate ladder wiring across `gpu-lighting`,
 - `WorkerJobBudgetManifestJob`
 - `WorkerJobBudgetManifest`
 - `WorkerJobBudgetManifestAdapterOptions`
+- `WorkerJobBudgetManifestGraph`
+- `WorkerJobBudgetManifestGraphJob`
+- `WorkerJobBudgetManifestPriorityLane`
 - `WorkerJobBudgetSnapshot`
 - `WorkerJobBudgetAdapter`
 
@@ -73,7 +87,8 @@ consumers do not duplicate ladder wiring across `gpu-lighting`,
 - Maintainability: consumer packages can publish stable manifest data and reuse
   one manifest-to-adapter factory instead of rebuilding local adapter glue.
 - Observability: adapters expose stable `jobType` and `queueClass` values for
-  local debugging and analytics routing.
+  local debugging and analytics routing. Manifest graphs expose roots and
+  priority lanes for scheduler inspection without executing the worker runtime.
 - Coordination: DAG metadata is preserved as data, but queue execution policy
   stays inside `@plasius/gpu-worker` and `@plasius/gpu-lock-free-queue`.
 - Security: only numeric budget values and bounded identifiers are accepted.

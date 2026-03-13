@@ -4,6 +4,7 @@ import {
   createDeviceProfile,
   createGpuPerformanceGovernor,
   createWorkerJobBudgetAdapter,
+  createWorkerJobBudgetManifestGraph,
   createWorkerJobBudgetAdaptersFromManifest,
 } from "../src/index.js";
 
@@ -45,10 +46,16 @@ describe("worker job budget adapter", () => {
     expect(adapter.queueClass).toBe("simulation");
     expect(adapter.priority).toBe(3);
     expect(adapter.dependencies).toEqual(["fluid.build-grid"]);
+    expect(adapter.dependents).toEqual([]);
+    expect(adapter.dependencyCount).toBe(1);
+    expect(adapter.unresolvedDependencyCount).toBe(1);
+    expect(adapter.dependentCount).toBe(0);
+    expect(adapter.root).toBe(false);
     expect(adapter.schedulerMode).toBe("dag");
     expect(adapter.getBudget().maxJobsPerDispatch).toBe(256);
     expect(adapter.getWorkerSnapshot().jobType).toBe("fluid.solve");
     expect(adapter.getWorkerSnapshot().priority).toBe(3);
+    expect(adapter.getWorkerSnapshot().root).toBe(false);
   });
 
   it("rejects invalid worker budget config", () => {
@@ -248,6 +255,11 @@ describe("worker job budget adapter", () => {
     expect(adapter!.queueClass).toBe("lighting");
     expect(adapter!.priority).toBe(4);
     expect(adapter!.dependencies).toEqual([]);
+    expect(adapter!.dependents).toEqual([]);
+    expect(adapter!.dependencyCount).toBe(0);
+    expect(adapter!.unresolvedDependencyCount).toBe(0);
+    expect(adapter!.dependentCount).toBe(0);
+    expect(adapter!.root).toBe(true);
     expect(adapter!.schedulerMode).toBe("dag");
     expect(adapter!.getBudget().maxJobsPerDispatch).toBe(16);
 
@@ -283,6 +295,119 @@ describe("worker job budget adapter", () => {
     expect(seen).toEqual(["direct-lighting:high"]);
   });
 
+  it("derives a manifest DAG graph with roots, dependents, and priority lanes", () => {
+    const graph = createWorkerJobBudgetManifestGraph({
+      schedulerMode: "dag",
+      jobs: [
+        {
+          label: "lighting.direct",
+          worker: {
+            jobType: "lighting.direct",
+            queueClass: "lighting",
+            priority: 4,
+            dependencies: [],
+            schedulerMode: "dag",
+          },
+          performance: {
+            id: "lighting.direct",
+            levels: [
+              {
+                id: "only",
+                config: {
+                  maxDispatchesPerFrame: 1,
+                  maxJobsPerDispatch: 8,
+                },
+              },
+            ],
+          },
+        },
+        {
+          label: "lighting.shadow",
+          worker: {
+            jobType: "lighting.shadow",
+            queueClass: "lighting",
+            priority: 3,
+            dependencies: [],
+            schedulerMode: "dag",
+          },
+          performance: {
+            id: "lighting.shadow",
+            levels: [
+              {
+                id: "only",
+                config: {
+                  maxDispatchesPerFrame: 1,
+                  maxJobsPerDispatch: 8,
+                },
+              },
+            ],
+          },
+        },
+        {
+          label: "lighting.resolve",
+          worker: {
+            jobType: "lighting.resolve",
+            queueClass: "lighting",
+            priority: 2,
+            dependencies: ["lighting.direct", "lighting.shadow"],
+            schedulerMode: "dag",
+          },
+          performance: {
+            id: "lighting.resolve",
+            levels: [
+              {
+                id: "only",
+                config: {
+                  maxDispatchesPerFrame: 1,
+                  maxJobsPerDispatch: 8,
+                },
+              },
+            ],
+          },
+        },
+      ],
+    });
+
+    expect(graph.schedulerMode).toBe("dag");
+    expect(graph.roots).toEqual(["lighting.direct", "lighting.shadow"]);
+    expect(graph.topologicalOrder).toEqual([
+      "lighting.direct",
+      "lighting.shadow",
+      "lighting.resolve",
+    ]);
+    expect(graph.priorityLanes).toEqual([
+      {
+        priority: 4,
+        jobIds: ["lighting.direct"],
+        rootJobIds: ["lighting.direct"],
+        jobCount: 1,
+        rootCount: 1,
+      },
+      {
+        priority: 3,
+        jobIds: ["lighting.shadow"],
+        rootJobIds: ["lighting.shadow"],
+        jobCount: 1,
+        rootCount: 1,
+      },
+      {
+        priority: 2,
+        jobIds: ["lighting.resolve"],
+        rootJobIds: [],
+        jobCount: 1,
+        rootCount: 0,
+      },
+    ]);
+    expect(graph.jobs.find((job) => job.id === "lighting.resolve")).toMatchObject({
+      dependencies: ["lighting.direct", "lighting.shadow"],
+      dependents: [],
+      dependencyCount: 2,
+      unresolvedDependencyCount: 2,
+      dependentCount: 0,
+      root: false,
+    });
+  });
+
   it("rejects manifests that do not expose worker job metadata", () => {
     expect(() =>
       createWorkerJobBudgetAdaptersFromManifest({
@@ -304,5 +429,83 @@ describe("worker job budget adapter", () => {
         ],
       })
     ).toThrow(/must provide performance\.jobType or worker\.jobType/);
+  });
+
+  it("rejects manifest graphs with unknown dependencies or cycles", () => {
+    expect(() =>
+      createWorkerJobBudgetManifestGraph({
+        schedulerMode: "dag",
+        jobs: [
+          {
+            performance: {
+              id: "lighting.resolve",
+              levels: [
+                {
+                  id: "only",
+                  config: {
+                    maxDispatchesPerFrame: 1,
+                    maxJobsPerDispatch: 8,
+                  },
+                },
+              ],
+            },
+            worker: {
+              jobType: "lighting.resolve",
+              queueClass: "lighting",
+              dependencies: ["lighting.direct"],
+              schedulerMode: "dag",
+            },
+          },
+        ],
+      })
+    ).toThrow(/depends on unknown job/);
+
+    expect(() =>
+      createWorkerJobBudgetManifestGraph({
+        schedulerMode: "dag",
+        jobs: [
+          {
+            performance: {
+              id: "a",
+              levels: [
+                {
+                  id: "only",
+                  config: {
+                    maxDispatchesPerFrame: 1,
+                    maxJobsPerDispatch: 8,
+                  },
+                },
+              ],
+            },
+            worker: {
+              jobType: "a",
+              queueClass: "lighting",
+              dependencies: ["b"],
+              schedulerMode: "dag",
+            },
+          },
+          {
+            performance: {
+              id: "b",
+              levels: [
+                {
+                  id: "only",
+                  config: {
+                    maxDispatchesPerFrame: 1,
+                    maxJobsPerDispatch: 8,
+                  },
+                },
+              ],
+            },
+            worker: {
+              jobType: "b",
+              queueClass: "lighting",
+              dependencies: ["a"],
+              schedulerMode: "dag",
+            },
+          },
+        ],
+      })
+    ).toThrow(/contains a cycle/);
   });
 });

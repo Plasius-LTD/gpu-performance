@@ -9,10 +9,16 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 ## [Unreleased]
 
 - **Added**
-  - (placeholder)
+  - `createWorkerJobBudgetManifestGraph(...)` so worker manifests can be
+    normalized into roots, dependents, topological order, and priority lanes
+    before budget adaptation.
 
 - **Changed**
-  - (placeholder)
+  - Worker-job budget adapters now expose derived DAG metadata including
+    `dependents`, `dependencyCount`, `unresolvedDependencyCount`,
+    `dependentCount`, and `root`.
+  - Worker-governance docs now describe the multi-root DAG contract explicitly,
+    instead of treating it as implied manifest metadata.
 
 - **Fixed**
   - (placeholder)

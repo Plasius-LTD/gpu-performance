@@ -3,6 +3,9 @@ import type {
   ModuleQualityLevel,
   WorkerJobBudgetAdapter,
   WorkerJobBudgetManifest,
+  WorkerJobBudgetManifestGraph,
+  WorkerJobBudgetManifestGraphJob,
+  WorkerJobBudgetManifestPriorityLane,
   WorkerJobBudgetManifestAdapterOptions,
   WorkerJobBudgetManifestJob,
   WorkerJobBudgetAdapterOptions,
@@ -135,6 +138,43 @@ function normalizeManifestJobs(
   return manifest.jobs;
 }
 
+function buildPriorityLanes(
+  jobs: readonly WorkerJobBudgetManifestGraphJob[]
+): readonly WorkerJobBudgetManifestPriorityLane[] {
+  const lanes = new Map<number, {
+    priority: number;
+    jobIds: string[];
+    rootJobIds: string[];
+  }>();
+
+  for (const job of jobs) {
+    const lane = lanes.get(job.priority) ?? {
+      priority: job.priority,
+      jobIds: [],
+      rootJobIds: [],
+    };
+    lane.jobIds.push(job.id);
+    if (job.root) {
+      lane.rootJobIds.push(job.id);
+    }
+    lanes.set(job.priority, lane);
+  }
+
+  return Object.freeze(
+    [...lanes.values()]
+      .sort((left, right) => right.priority - left.priority)
+      .map((lane) =>
+        Object.freeze({
+          priority: lane.priority,
+          jobIds: Object.freeze([...lane.jobIds]),
+          rootJobIds: Object.freeze([...lane.rootJobIds]),
+          jobCount: lane.jobIds.length,
+          rootCount: lane.rootJobIds.length,
+        })
+      )
+  );
+}
+
 function resolveManifestJobType(job: WorkerJobBudgetManifestJob, index: number): string {
   const jobType = job.performance?.jobType ?? job.worker?.jobType;
   if (typeof jobType !== "string") {
@@ -202,6 +242,117 @@ function resolveManifestPriority(
   ) ?? 0;
 }
 
+function buildManifestGraph(
+  manifest: WorkerJobBudgetManifest | readonly WorkerJobBudgetManifestJob[]
+): WorkerJobBudgetManifestGraph {
+  const jobs = normalizeManifestJobs(manifest);
+  const normalized = jobs.map((job, index) => {
+    if (!isPlainObject(job.performance)) {
+      throw new Error(`Manifest job ${index} must provide a performance object.`);
+    }
+
+    const id = assertIdentifier(`jobs[${index}].performance.id`, job.performance.id);
+
+    return {
+      id,
+      key: typeof job.key === "string" ? job.key : undefined,
+      label: typeof job.label === "string" ? job.label : undefined,
+      jobType: resolveManifestJobType(job, index),
+      queueClass: resolveManifestQueueClass(job, index),
+      priority: resolveManifestPriority(job, index),
+      dependencies: resolveManifestDependencies(job, index),
+      schedulerMode: resolveManifestSchedulerMode(manifest, job, index),
+    };
+  });
+
+  const ids = new Set<string>();
+  for (const job of normalized) {
+    if (ids.has(job.id)) {
+      throw new Error(`Duplicate worker manifest job id detected: ${job.id}`);
+    }
+    ids.add(job.id);
+  }
+
+  for (const job of normalized) {
+    for (const dependency of job.dependencies) {
+      if (!ids.has(dependency)) {
+        throw new Error(
+          `Worker manifest job "${job.id}" depends on unknown job "${dependency}".`
+        );
+      }
+      if (dependency === job.id) {
+        throw new Error(`Worker manifest job "${job.id}" cannot depend on itself.`);
+      }
+    }
+  }
+
+  const dependentsById = new Map(normalized.map((job) => [job.id, [] as string[]]));
+  const indegree = new Map(
+    normalized.map((job) => [job.id, job.dependencies.length] as const)
+  );
+
+  for (const job of normalized) {
+    for (const dependency of job.dependencies) {
+      dependentsById.get(dependency)?.push(job.id);
+    }
+  }
+
+  const roots = normalized
+    .filter((job) => job.dependencies.length === 0)
+    .map((job) => job.id);
+  const queue = [...roots];
+  const topologicalOrder: string[] = [];
+
+  while (queue.length > 0) {
+    const currentId = queue.shift();
+    if (!currentId) {
+      continue;
+    }
+    topologicalOrder.push(currentId);
+    for (const dependentId of dependentsById.get(currentId) ?? []) {
+      const next = (indegree.get(dependentId) ?? 0) - 1;
+      indegree.set(dependentId, next);
+      if (next === 0) {
+        queue.push(dependentId);
+      }
+    }
+  }
+
+  if (topologicalOrder.length !== normalized.length) {
+    throw new Error("Worker manifest graph contains a cycle.");
+  }
+
+  const graphJobs = normalized.map((job) =>
+    Object.freeze({
+      ...job,
+      dependencies: Object.freeze([...job.dependencies]),
+      dependents: Object.freeze([...(dependentsById.get(job.id) ?? [])]),
+      dependencyCount: job.dependencies.length,
+      unresolvedDependencyCount: job.dependencies.length,
+      dependentCount: (dependentsById.get(job.id) ?? []).length,
+      root: job.dependencies.length === 0,
+    })
+  );
+
+  return Object.freeze({
+    schedulerMode: graphJobs.some(
+      (job) => job.schedulerMode === "dag" || job.dependencies.length > 0
+    )
+      ? "dag"
+      : "flat",
+    jobCount: graphJobs.length,
+    maxPriority: graphJobs.reduce(
+      (current, job) => Math.max(current, job.priority),
+      0
+    ),
+    jobIds: Object.freeze(graphJobs.map((job) => job.id)),
+    roots: Object.freeze(graphJobs.filter((job) => job.root).map((job) => job.id)),
+    topologicalOrder: Object.freeze(topologicalOrder),
+    priorityLanes: buildPriorityLanes(graphJobs),
+    jobs: Object.freeze(graphJobs),
+  });
+}
+
 /**
  * Creates a ladder-backed adapter specialized for gpu-worker job budgets.
  */
@@ -215,10 +366,15 @@ export function createWorkerJobBudgetAdapter(
       : assertEnumValue("queueClass", options.queueClass, workerJobQueueClasses);
   const priority = readNonNegativeInteger("priority", options.priority) ?? 0;
   const dependencies = normalizeDependencies("dependencies", options.dependencies);
+  const dependents = normalizeDependencies("dependents", options.dependents);
   const schedulerMode =
     options.schedulerMode === undefined
       ? "flat"
       : assertEnumValue("schedulerMode", options.schedulerMode, workerSchedulerModes);
+  const dependencyCount = dependencies.length;
+  const unresolvedDependencyCount = dependencyCount;
+  const dependentCount = dependents.length;
+  const root = dependencyCount === 0;
 
   const levels = options.levels.map(normalizeBudgetLevel);
 
@@ -238,6 +394,11 @@ export function createWorkerJobBudgetAdapter(
     queueClass,
     priority,
     dependencies,
+    dependents,
+    dependencyCount,
+    unresolvedDependencyCount,
+    dependentCount,
+    root,
     schedulerMode,
   });
 
@@ -247,6 +408,11 @@ export function createWorkerJobBudgetAdapter(
     queueClass,
     priority,
     dependencies,
+    dependents,
+    dependencyCount,
+    unresolvedDependencyCount,
+    dependentCount,
+    root,
     schedulerMode,
     getBudget() {
       return ladder.getCurrentLevel().config;
@@ -256,12 +422,24 @@ export function createWorkerJobBudgetAdapter(
 }
 
 /**
+ * Normalizes a worker manifest into a graph with roots, dependents, and
+ * priority lanes so runtimes can reason about multi-root DAG workloads.
+ */
+export function createWorkerJobBudgetManifestGraph(
+  manifest: WorkerJobBudgetManifest | readonly WorkerJobBudgetManifestJob[]
+): WorkerJobBudgetManifestGraph {
+  return buildManifestGraph(manifest);
+}
+
+/**
  * Creates worker budget adapters from a consumer worker-manifest shape.
  */
 export function createWorkerJobBudgetAdaptersFromManifest(
   manifest: WorkerJobBudgetManifest | readonly WorkerJobBudgetManifestJob[],
   options: WorkerJobBudgetManifestAdapterOptions = {}
 ): readonly WorkerJobBudgetAdapter[] {
+  const graph = buildManifestGraph(manifest);
+  const graphJobById = new Map(graph.jobs.map((job) => [job.id, job]));
   const jobs = normalizeManifestJobs(manifest);
   const { initialLevels, selectJob, onLevelChange } = options;
 
@@ -275,20 +453,20 @@ export function createWorkerJobBudgetAdaptersFromManifest(
     }
 
     const id = assertIdentifier(`jobs[${index}].performance.id`, job.performance.id);
-    const jobType = resolveManifestJobType(job, index);
-    const queueClass = resolveManifestQueueClass(job, index);
-    const schedulerMode = resolveManifestSchedulerMode(manifest, job, index);
-    const dependencies = resolveManifestDependencies(job, index);
-    const priority = resolveManifestPriority(job, index);
+    const graphJob = graphJobById.get(id);
+    if (!graphJob) {
+      throw new Error(`Worker manifest graph is missing job "${id}".`);
+    }
 
     return [
       createWorkerJobBudgetAdapter({
         id,
-        jobType,
-        queueClass,
-        priority,
-        dependencies,
-        schedulerMode,
+        jobType: graphJob.jobType,
+        queueClass: graphJob.queueClass,
+        priority: graphJob.priority,
+        dependencies: graphJob.dependencies,
+        dependents: graphJob.dependents,
+        schedulerMode: graphJob.schedulerMode,
         domain: job.performance.domain,
         authority: job.performance.authority,
         importance: job.performance.importance,

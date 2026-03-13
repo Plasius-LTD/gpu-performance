@@ -117,6 +117,7 @@ import {
   createDeviceProfile,
   createGpuPerformanceGovernor,
   createWorkerJobBudgetAdapter,
+  createWorkerJobBudgetManifestGraph,
   createWorkerJobBudgetAdaptersFromManifest,
 } from "@plasius/gpu-performance";
 
@@ -172,6 +173,7 @@ import { createWorkerJobBudgetAdaptersFromManifest } from "@plasius/gpu-performa
 import { getLightingTechniqueWorkerManifest } from "@plasius/gpu-lighting";
 
 const manifest = getLightingTechniqueWorkerManifest("hybrid");
+const graph = createWorkerJobBudgetManifestGraph(manifest);
 const adapters = createWorkerJobBudgetAdaptersFromManifest(manifest, {
   initialLevels: {
     "lighting.direct": "medium",
@@ -185,6 +187,9 @@ const governor = createGpuPerformanceGovernor({
   device,
   modules: adapters,
 });
+
+console.log(graph.roots);
+console.log(graph.priorityLanes);
 ```
 
 Manifest-driven adapters now preserve scheduler metadata from the source
@@ -194,6 +199,18 @@ package:
 - `priority`: non-negative ready-queue priority
 - `dependencies`: upstream job labels that must complete before a job becomes
   runnable
+- `dependents`: downstream job labels unlocked by completion
+- `root`: whether a job starts runnable
+
+If callers need the manifest normalized into an explicit multi-root DAG before
+adapting budgets, use `createWorkerJobBudgetManifestGraph(...)`. The helper
+derives:
+
+- `jobIds`
+- `roots`
+- `topologicalOrder`
+- `priorityLanes`
+- per-job dependency and dependent counts
 
 That means consumers can reuse DAG-aware manifests from packages such as
 `@plasius/gpu-lighting`, `@plasius/gpu-particles`, and `@plasius/gpu-physics`
@@ -205,6 +222,7 @@ without rebuilding dependency metadata by hand.
 - `negotiateFrameTarget(options)`
 - `createQualityLadderAdapter(options)`
 - `createWorkerJobBudgetAdapter(options)`
+- `createWorkerJobBudgetManifestGraph(manifest)`
 - `createWorkerJobBudgetAdaptersFromManifest(manifest, options?)`
 - `createGpuPerformanceGovernor(options)`
 - `createPerformanceGovernor(options)` alias
