@@ -1,0 +1,31 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/)**, and this project adheres to **[Semantic Versioning](https://semver.org/spec/v2.0.0.html)**.
+
+---
+
+## [Unreleased]
+
+- **Added**
+  - Initial `@plasius/gpu-performance` package scaffold based on the Plasius package template standard.
+  - Device-aware frame-target negotiation, quality ladder adapters, and a local trend-aware GPU performance governor API.
+  - ADRs, TDRs, and design documentation for adaptive rendering quality governance.
+  - Unit tests and a runnable console demo for package verification.
+  - NFR compliance documentation covering validation, reliability, and observability controls.
+  - Worker-job budget adapters so `@plasius/gpu-*` packages can expose
+    `@plasius/gpu-worker` scheduling budgets through the governor.
+
+- **Changed**
+  - Documented `@plasius/analytics` as the required analytics/export path for governor telemetry instead of defining package-local analytics behavior.
+  - Removed copied template package-identity references from package docs and legal text.
+  - Hardened runtime validation, error isolation, and idempotent frame handling to align the governor with the package NFR baseline.
+  - Documented worker-job-first governance as the preferred adaptation pattern
+    for current and future compute-heavy `@plasius/gpu-*` packages.
+
+- **Fixed**
+  - Prevented invalid configuration, duplicate frame ingestion, aborted samples, and failing adapters/telemetry hooks from destabilizing the governor.
+
+- **Security**
+  - WebGPU-only scope documented to avoid unsupported degraded runtime paths.
