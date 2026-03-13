@@ -9,6 +9,20 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 ## [Unreleased]
 
 - **Added**
+  - (placeholder)
+
+- **Changed**
+  - (placeholder)
+
+- **Fixed**
+  - (placeholder)
+
+- **Security**
+  - (placeholder)
+
+## [0.1.0] - 2026-03-13
+
+- **Added**
   - Initial `@plasius/gpu-performance` package scaffold based on the Plasius package template standard.
   - Device-aware frame-target negotiation, quality ladder adapters, and a local trend-aware GPU performance governor API.
   - ADRs, TDRs, and design documentation for adaptive rendering quality governance.
@@ -42,3 +56,6 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 - **Security**
   - WebGPU-only scope documented to avoid unsupported degraded runtime paths.
+
+
+[0.1.0]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.0
