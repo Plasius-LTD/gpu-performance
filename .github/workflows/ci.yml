@@ -11,6 +11,7 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
 jobs:
   build-test:
@@ -89,10 +90,10 @@ jobs:
           }
 
       - name: Upload coverage to Codecov
-        if: ${{ !github.event.repository.private || secrets.CODECOV_TOKEN != '' }}
+        if: ${{ !github.event.repository.private || env.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v5
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ env.CODECOV_TOKEN }}
           files: ${{ env.LCOV_FILE }}
           flags: unittests
           fail_ci_if_error: true
