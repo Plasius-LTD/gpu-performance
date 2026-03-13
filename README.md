@@ -187,6 +187,18 @@ const governor = createGpuPerformanceGovernor({
 });
 ```
 
+Manifest-driven adapters now preserve scheduler metadata from the source
+package:
+
+- `schedulerMode`: `flat` or `dag`
+- `priority`: non-negative ready-queue priority
+- `dependencies`: upstream job labels that must complete before a job becomes
+  runnable
+
+That means consumers can reuse DAG-aware manifests from packages such as
+`@plasius/gpu-lighting`, `@plasius/gpu-particles`, and `@plasius/gpu-physics`
+without rebuilding dependency metadata by hand.
+
 ## API
 
 - `createDeviceProfile(input)`
@@ -255,6 +267,8 @@ const governor = createGpuPerformanceGovernor({
 - Renderer integration happens through adapters, not hidden coupling.
 - Worker-job budgets are the preferred actuation surface for current and future
   `@plasius/gpu-*` compute packages.
+- Worker manifests may carry DAG scheduling metadata so the governor can reason
+  about ordered worker stages without owning queue internals.
 - Analytics export goes through `@plasius/analytics`; this package only emits
   local lifecycle hooks.
 

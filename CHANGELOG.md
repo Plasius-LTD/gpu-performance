@@ -29,6 +29,9 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
     for current and future compute-heavy `@plasius/gpu-*` packages.
   - Expanded worker-governance guidance with a first-consumer manifest adoption
     path for lighting and particle packages.
+  - Preserved worker manifest `schedulerMode`, `priority`, and `dependencies`
+    in worker-budget adapters so DAG-shaped package manifests flow through the
+    governor unchanged.
   - Added repository release-automation guidance reflecting the new GitHub
     workflow set.
   - Updated package maintenance guidance to use the Node 24 baseline reflected in

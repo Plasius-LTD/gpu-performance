@@ -54,6 +54,11 @@ export type WorkerJobQueueClass =
   | "custom";
 
 /**
+ * Scheduler shape used by worker-capable packages.
+ */
+export type WorkerSchedulerMode = "flat" | "dag";
+
+/**
  * Safety classification for automatic adaptation.
  */
 export type ModuleAuthority =
@@ -299,6 +304,9 @@ export interface WorkerJobBudgetAdapterOptions {
   id: string;
   jobType: string;
   queueClass?: WorkerJobQueueClass;
+  priority?: number;
+  dependencies?: readonly string[];
+  schedulerMode?: WorkerSchedulerMode;
   domain?: PerformanceDomain;
   authority?: ModuleAuthority;
   importance?: ModuleImportance;
@@ -329,6 +337,9 @@ export interface WorkerJobBudgetManifestJob {
   worker?: {
     jobType?: string;
     queueClass?: WorkerJobQueueClass;
+    priority?: number;
+    dependencies?: readonly string[];
+    schedulerMode?: WorkerSchedulerMode;
   };
   performance: WorkerJobBudgetManifestPerformance;
   debug?: Readonly<Record<string, unknown>>;
@@ -341,6 +352,7 @@ export interface WorkerJobBudgetManifest {
   schemaVersion?: number;
   owner?: string;
   queueClass?: WorkerJobQueueClass;
+  schedulerMode?: WorkerSchedulerMode;
   jobs: readonly WorkerJobBudgetManifestJob[];
 }
 
@@ -363,6 +375,9 @@ export interface WorkerJobBudgetSnapshot
   extends PerformanceModuleSnapshot<WorkerJobBudgetConfig> {
   jobType: string;
   queueClass: WorkerJobQueueClass;
+  priority: number;
+  dependencies: readonly string[];
+  schedulerMode: WorkerSchedulerMode;
 }
 
 /**
@@ -372,6 +387,9 @@ export interface WorkerJobBudgetAdapter
   extends QualityLadderAdapter<WorkerJobBudgetConfig> {
   jobType: string;
   queueClass: WorkerJobQueueClass;
+  priority: number;
+  dependencies: readonly string[];
+  schedulerMode: WorkerSchedulerMode;
   getBudget(): WorkerJobBudgetConfig;
   getWorkerSnapshot(): WorkerJobBudgetSnapshot;
 }

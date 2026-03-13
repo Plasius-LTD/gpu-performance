@@ -32,6 +32,11 @@ worker-specific metadata:
 
 - `jobType`: stable job identifier aligned with worker registration.
 - `queueClass`: logical lane used for balancing and debug grouping.
+- `schedulerMode`: whether the worker package expects a `flat` or `dag`
+  scheduler contract.
+- `priority`: bounded ready-queue priority for runnable jobs.
+- `dependencies`: upstream worker job identifiers that must complete before the
+  job becomes runnable in DAG mode.
 - `levels[].config.maxDispatchesPerFrame`: bound how many dispatches the package
   may issue for that job in one frame.
 - `levels[].config.maxJobsPerDispatch`: cap batch size for a dispatch.
@@ -69,6 +74,8 @@ consumers do not duplicate ladder wiring across `gpu-lighting`,
   one manifest-to-adapter factory instead of rebuilding local adapter glue.
 - Observability: adapters expose stable `jobType` and `queueClass` values for
   local debugging and analytics routing.
+- Coordination: DAG metadata is preserved as data, but queue execution policy
+  stays inside `@plasius/gpu-worker` and `@plasius/gpu-lock-free-queue`.
 - Security: only numeric budget values and bounded identifiers are accepted.
 - Cost: implementation reuses the existing ladder system and does not introduce
   additional runtime dependencies.
@@ -86,6 +93,9 @@ consumers do not duplicate ladder wiring across `gpu-lighting`,
   Mitigation: keep queue classes bounded and document expected usage.
 - Risk: budgets could be misused to scale authoritative simulation.
   Mitigation: retain the existing authority protection in the governor.
+- Risk: packages could publish dependency ids that drift from worker job labels.
+  Mitigation: validate identifiers eagerly and encourage manifest-driven
+  adapter creation over handwritten glue.
 
 ## Open Questions
 

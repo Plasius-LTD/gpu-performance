@@ -32,6 +32,16 @@ Each package-owned worker job should expose levels with:
 
 This keeps the public surface stable even as new effect packages appear.
 
+When a package schedules through a DAG-ready queue, the manifest should also
+publish:
+
+- `schedulerMode`
+- `priority`
+- `dependencies`
+
+Those values stay package-owned so the governor can preserve ordering metadata
+without taking ownership of queue internals.
+
 ## Adaptation Policy
 
 1. Negotiate the target frame profile for the current device.
@@ -46,6 +56,7 @@ Each future `@plasius/gpu-*` compute package should provide:
 
 - stable job labels aligned with `@plasius/gpu-worker`,
 - one or more worker budget ladders consumable by `@plasius/gpu-performance`,
+- DAG scheduler metadata when jobs depend on one another,
 - optional debug event emission points consumable by `@plasius/gpu-debug`,
 - package-local translation from selected budget level to actual dispatch logic.
 

@@ -7,6 +7,7 @@ import type {
   RuntimeMode,
   ThermalState,
   WorkerJobQueueClass,
+  WorkerSchedulerMode,
 } from "./types.js";
 
 const IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/u;
@@ -78,6 +79,11 @@ export const workerJobQueueClasses = Object.freeze([
   "voxel",
   "custom",
 ]) satisfies readonly WorkerJobQueueClass[];
+
+export const workerSchedulerModes = Object.freeze([
+  "flat",
+  "dag",
+]) satisfies readonly WorkerSchedulerMode[];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

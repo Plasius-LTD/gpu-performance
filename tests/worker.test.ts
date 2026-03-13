@@ -13,6 +13,9 @@ describe("worker job budget adapter", () => {
       id: "fluid-solver",
       jobType: "fluid.solve",
       queueClass: "simulation",
+      priority: 3,
+      dependencies: ["fluid.build-grid"],
+      schedulerMode: "dag",
       domain: "custom",
       levels: [
         {
@@ -40,8 +43,12 @@ describe("worker job budget adapter", () => {
 
     expect(adapter.jobType).toBe("fluid.solve");
     expect(adapter.queueClass).toBe("simulation");
+    expect(adapter.priority).toBe(3);
+    expect(adapter.dependencies).toEqual(["fluid.build-grid"]);
+    expect(adapter.schedulerMode).toBe("dag");
     expect(adapter.getBudget().maxJobsPerDispatch).toBe(256);
     expect(adapter.getWorkerSnapshot().jobType).toBe("fluid.solve");
+    expect(adapter.getWorkerSnapshot().priority).toBe(3);
   });
 
   it("rejects invalid worker budget config", () => {
@@ -143,6 +150,7 @@ describe("worker job budget adapter", () => {
     const manifest = {
       schemaVersion: 1,
       owner: "lighting",
+      schedulerMode: "dag" as const,
       jobs: [
         {
           key: "direct-lighting",
@@ -150,6 +158,9 @@ describe("worker job budget adapter", () => {
           worker: {
             jobType: "lighting.direct",
             queueClass: "lighting" as const,
+            priority: 4,
+            dependencies: [] as const,
+            schedulerMode: "dag" as const,
           },
           performance: {
             id: "lighting.direct",
@@ -235,6 +246,9 @@ describe("worker job budget adapter", () => {
     expect(adapter).toBeDefined();
     expect(adapter!.jobType).toBe("lighting.direct");
     expect(adapter!.queueClass).toBe("lighting");
+    expect(adapter!.priority).toBe(4);
+    expect(adapter!.dependencies).toEqual([]);
+    expect(adapter!.schedulerMode).toBe("dag");
     expect(adapter!.getBudget().maxJobsPerDispatch).toBe(16);
 
     adapter!.stepUp({

@@ -16,6 +16,7 @@ import {
   readNonNegativeNumber,
   readPositiveNumber,
   workerJobQueueClasses,
+  workerSchedulerModes,
 } from "./validation.js";
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -46,6 +47,23 @@ function readNonNegativeInteger(name: string, value: unknown): number | undefine
   }
 
   return parsed;
+}
+
+function normalizeDependencies(
+  name: string,
+  value: unknown
+): readonly string[] {
+  if (value === undefined) {
+    return Object.freeze([]);
+  }
+
+  if (!Array.isArray(value)) {
+    throw new Error(`${name} must be an array of dependency ids.`);
+  }
+
+  return Object.freeze(
+    [...new Set(value.map((entry, index) => assertIdentifier(`${name}[${index}]`, entry)))]
+  );
 }
 
 function normalizeBudgetLevel(
@@ -142,6 +160,48 @@ function resolveManifestQueueClass(
   return assertEnumValue(`jobs[${index}].queueClass`, queueClass, workerJobQueueClasses);
 }
 
+function resolveManifestSchedulerMode(
+  manifest: WorkerJobBudgetManifest | readonly WorkerJobBudgetManifestJob[],
+  job: WorkerJobBudgetManifestJob,
+  index: number
+): WorkerJobBudgetAdapter["schedulerMode"] {
+  const topLevelMode =
+    !Array.isArray(manifest) && isPlainObject(manifest)
+      ? manifest.schedulerMode
+      : undefined;
+  const schedulerMode = job.worker?.schedulerMode ?? topLevelMode;
+
+  if (schedulerMode === undefined) {
+    return "flat";
+  }
+
+  return assertEnumValue(
+    `jobs[${index}].schedulerMode`,
+    schedulerMode,
+    workerSchedulerModes
+  );
+}
+
+function resolveManifestDependencies(
+  job: WorkerJobBudgetManifestJob,
+  index: number
+): readonly string[] {
+  return normalizeDependencies(
+    `jobs[${index}].dependencies`,
+    job.worker?.dependencies
+  );
+}
+
+function resolveManifestPriority(
+  job: WorkerJobBudgetManifestJob,
+  index: number
+): number {
+  return readNonNegativeInteger(
+    `jobs[${index}].priority`,
+    job.worker?.priority
+  ) ?? 0;
+}
+
 /**
  * Creates a ladder-backed adapter specialized for gpu-worker job budgets.
  */
@@ -153,6 +213,12 @@ export function createWorkerJobBudgetAdapter(
     options.queueClass === undefined
       ? "custom"
       : assertEnumValue("queueClass", options.queueClass, workerJobQueueClasses);
+  const priority = readNonNegativeInteger("priority", options.priority) ?? 0;
+  const dependencies = normalizeDependencies("dependencies", options.dependencies);
+  const schedulerMode =
+    options.schedulerMode === undefined
+      ? "flat"
+      : assertEnumValue("schedulerMode", options.schedulerMode, workerSchedulerModes);
 
   const levels = options.levels.map(normalizeBudgetLevel);
 
@@ -170,12 +236,18 @@ export function createWorkerJobBudgetAdapter(
     ...ladder.getSnapshot(),
     jobType,
     queueClass,
+    priority,
+    dependencies,
+    schedulerMode,
   });
 
   return {
     ...ladder,
     jobType,
     queueClass,
+    priority,
+    dependencies,
+    schedulerMode,
     getBudget() {
       return ladder.getCurrentLevel().config;
     },
@@ -205,12 +277,18 @@ export function createWorkerJobBudgetAdaptersFromManifest(
     const id = assertIdentifier(`jobs[${index}].performance.id`, job.performance.id);
     const jobType = resolveManifestJobType(job, index);
     const queueClass = resolveManifestQueueClass(job, index);
+    const schedulerMode = resolveManifestSchedulerMode(manifest, job, index);
+    const dependencies = resolveManifestDependencies(job, index);
+    const priority = resolveManifestPriority(job, index);
 
     return [
       createWorkerJobBudgetAdapter({
         id,
         jobType,
         queueClass,
+        priority,
+        dependencies,
+        schedulerMode,
         domain: job.performance.domain,
         authority: job.performance.authority,
         importance: job.performance.importance,
