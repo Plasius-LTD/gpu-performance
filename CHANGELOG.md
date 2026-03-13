@@ -23,6 +23,8 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
   - Hardened runtime validation, error isolation, and idempotent frame handling to align the governor with the package NFR baseline.
   - Documented worker-job-first governance as the preferred adaptation pattern
     for current and future compute-heavy `@plasius/gpu-*` packages.
+  - Updated package maintenance guidance to use the Node 24 baseline reflected in
+    `.nvmrc`.
 
 - **Fixed**
   - Prevented invalid configuration, duplicate frame ingestion, aborted samples, and failing adapters/telemetry hooks from destabilizing the governor.

@@ -8,7 +8,7 @@
 
 
 ## Setup
-- Use Node.js 22 (see `.nvmrc`) and npm.
+- Use Node.js 24 (see `.nvmrc`) and npm.
 - Install dependencies with `npm ci`.
 
 ## Common commands
