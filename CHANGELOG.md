@@ -9,6 +9,20 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 ## [Unreleased]
 
 - **Added**
+  - (placeholder)
+
+- **Changed**
+  - (placeholder)
+
+- **Fixed**
+  - (placeholder)
+
+- **Security**
+  - (placeholder)
+
+## [0.1.1] - 2026-03-14
+
+- **Added**
   - `createWorkerJobBudgetManifestGraph(...)` so worker manifests can be
     normalized into roots, dependents, topological order, and priority lanes
     before budget adaptation.
@@ -79,3 +93,4 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 
 [0.1.0]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.0
+[0.1.1]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.1
