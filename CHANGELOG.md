@@ -12,7 +12,8 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
   - (placeholder)
 
 - **Changed**
-  - (placeholder)
+  - CI and CD workflows now upload coverage through the Codecov CLI instead of
+    the JavaScript action wrapper, removing the remaining Node 20 action path.
 
 - **Fixed**
   - (placeholder)
