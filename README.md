@@ -216,6 +216,16 @@ That means consumers can reuse DAG-aware manifests from packages such as
 `@plasius/gpu-lighting`, `@plasius/gpu-particles`, and `@plasius/gpu-physics`
 without rebuilding dependency metadata by hand.
 
+When those adapters are registered with the governor, DAG metadata is no longer
+debug-only. The governor now:
+
+- emits `decision.workerGraph` and `getState().workerGraph` summaries for local
+  observability,
+- protects DAG roots, high-priority jobs, and high fan-out jobs from being
+  degraded before lower-value leaf work,
+- keeps that graph reasoning local to the governor without taking ownership of
+  queue execution internals.
+
 ## API
 
 - `createDeviceProfile(input)`
@@ -267,6 +277,8 @@ const governor = createGpuPerformanceGovernor({
           cycle: decision.cycle,
           targetFrameTimeMs: decision.metrics.targetFrameTimeMs,
           averageFrameTimeMs: decision.metrics.averageFrameTimeMs,
+          dagRootCount: decision.workerGraph?.rootCount ?? 0,
+          dagMaxPriority: decision.workerGraph?.maxPriority ?? 0,
           modules: decision.adjustments.map((adjustment) => adjustment.moduleId),
         },
       });

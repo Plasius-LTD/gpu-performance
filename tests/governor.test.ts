@@ -4,6 +4,7 @@ import {
   createDeviceProfile,
   createGpuPerformanceGovernor,
   createQualityLadderAdapter,
+  createWorkerJobBudgetAdapter,
 } from "../src/index.js";
 
 function createGovernor() {
@@ -251,5 +252,88 @@ describe("gpu performance governor", () => {
 
     expect(decision.processed).toBe(true);
     expect(decision.errors[0]?.code).toBe("TELEMETRY_DECISION_HOOK_FAILED");
+  });
+
+  it("surfaces DAG worker summaries and protects root or high-fan-out jobs first", () => {
+    const root = createWorkerJobBudgetAdapter({
+      id: "lighting.visibility",
+      jobType: "lighting.visibility",
+      queueClass: "lighting",
+      schedulerMode: "dag",
+      priority: 3,
+      dependents: ["lighting.compose"],
+      domain: "lighting",
+      levels: [
+        {
+          id: "low",
+          config: { maxDispatchesPerFrame: 1, maxJobsPerDispatch: 16 },
+          estimatedCostMs: 1.2,
+        },
+        {
+          id: "high",
+          config: { maxDispatchesPerFrame: 2, maxJobsPerDispatch: 64 },
+          estimatedCostMs: 4.8,
+        },
+      ],
+    });
+    const leaf = createWorkerJobBudgetAdapter({
+      id: "lighting.compose",
+      jobType: "lighting.compose",
+      queueClass: "lighting",
+      schedulerMode: "dag",
+      priority: 0,
+      dependencies: ["lighting.visibility"],
+      domain: "lighting",
+      levels: [
+        {
+          id: "low",
+          config: { maxDispatchesPerFrame: 1, maxJobsPerDispatch: 8 },
+          estimatedCostMs: 1.1,
+        },
+        {
+          id: "high",
+          config: { maxDispatchesPerFrame: 2, maxJobsPerDispatch: 32 },
+          estimatedCostMs: 4.7,
+        },
+      ],
+    });
+
+    const governor = createGpuPerformanceGovernor({
+      device: {
+        deviceClass: "desktop",
+        mode: "flat",
+        refreshRateHz: 60,
+      },
+      modules: [root, leaf],
+      adaptation: {
+        sampleWindowSize: 4,
+        minimumSamplesBeforeAdjustment: 4,
+        degradeCooldownFrames: 1,
+        maxStepChangesPerCycle: 1,
+      },
+    });
+
+    for (const frameTimeMs of [20, 20.2, 20.1]) {
+      governor.recordFrame({ frameTimeMs });
+    }
+
+    const decision = governor.recordFrame({ frameTimeMs: 20.3, frameId: "frame-dag-1" });
+
+    expect(decision.adjustments[0]?.moduleId).toBe("lighting.compose");
+    expect(decision.workerGraph).toEqual({
+      schedulerMode: "dag",
+      jobCount: 2,
+      rootCount: 1,
+      protectedJobCount: 1,
+      degradableJobCount: 1,
+      maxPriority: 3,
+      maxDependentCount: 1,
+      roots: ["lighting.visibility"],
+      priorityLanes: [
+        { priority: 3, jobCount: 1, rootCount: 1, protectedJobCount: 1 },
+        { priority: 0, jobCount: 1, rootCount: 0, protectedJobCount: 0 },
+      ],
+    });
+    expect(governor.getState().workerGraph).toEqual(decision.workerGraph);
   });
 });

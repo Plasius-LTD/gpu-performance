@@ -56,6 +56,8 @@ data. It derives:
 1. Negotiate the target frame profile for the current device.
 2. Measure sustained pressure from rolling frame metrics.
 3. Degrade worker-job budgets for visual and non-authoritative systems first.
+   Within DAG workloads, prefer leaf, low-priority, low-fan-out jobs before
+   roots or jobs that unlock substantial downstream work.
 4. Recover in reverse order with longer cooldowns.
 5. Leave authoritative gameplay jobs fixed unless a caller opts in explicitly.
 
@@ -81,3 +83,9 @@ Portable WebGPU does not guarantee direct access to total GPU memory or core
 count. `@plasius/gpu-debug` therefore reports tracked allocations, dispatch
 counts, queue depths, estimated invocations, and optional host-supplied hardware
 hints instead of claiming unavailable counters as authoritative.
+
+For local governor observability, `@plasius/gpu-performance` now also emits a
+compact `workerGraph` summary on decisions and state snapshots when registered
+modules expose DAG worker metadata. That summary covers roots, priority lanes,
+protected job counts, and maximum fan-out without leaking queue internals into
+the package boundary.

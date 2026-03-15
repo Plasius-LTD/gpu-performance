@@ -9,11 +9,14 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 ## [Unreleased]
 
 - **Added**
-  - (placeholder)
+  - Governor decision and state snapshots now expose compact DAG worker-graph
+    summaries when registered modules publish worker metadata.
 
 - **Changed**
   - CI and CD workflows now upload coverage through the Codecov CLI instead of
     the JavaScript action wrapper, removing the remaining Node 20 action path.
+  - Degrade selection now protects DAG roots, higher-priority jobs, and
+    higher-fan-out jobs before lower-value leaf work.
 
 - **Fixed**
   - (placeholder)

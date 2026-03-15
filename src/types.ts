@@ -205,6 +205,7 @@ export interface PerformanceAdjustmentContext {
   pressureLevel: PressureLevel;
   metrics: GovernorMetrics;
   target: FrameTargetProfile;
+  workerGraph: GovernorWorkerGraphSummary | null;
 }
 
 /**
@@ -461,6 +462,31 @@ export interface PerformanceTelemetryHooks {
 }
 
 /**
+ * Priority-lane summary derived from registered worker-job adapters.
+ */
+export interface GovernorWorkerGraphPriorityLaneSummary {
+  priority: number;
+  jobCount: number;
+  rootCount: number;
+  protectedJobCount: number;
+}
+
+/**
+ * DAG summary derived from registered worker-job adapters for observability.
+ */
+export interface GovernorWorkerGraphSummary {
+  schedulerMode: WorkerSchedulerMode;
+  jobCount: number;
+  rootCount: number;
+  protectedJobCount: number;
+  degradableJobCount: number;
+  maxPriority: number;
+  maxDependentCount: number;
+  roots: readonly string[];
+  priorityLanes: readonly GovernorWorkerGraphPriorityLaneSummary[];
+}
+
+/**
  * Tuning knobs for adaptation responsiveness and hysteresis.
  */
 export interface GovernorAdaptationOptions {
@@ -497,6 +523,7 @@ export interface GovernorDecision {
   processed: boolean;
   pressureLevel: PressureLevel;
   metrics: GovernorMetrics;
+  workerGraph: GovernorWorkerGraphSummary | null;
   adjustments: readonly PerformanceAdjustmentRecord[];
   errors: readonly GovernorErrorRecord[];
   reason: string;
@@ -511,6 +538,7 @@ export interface GovernorState {
   device: DeviceProfile;
   metrics: GovernorMetrics | null;
   modules: readonly PerformanceModuleSnapshot[];
+  workerGraph: GovernorWorkerGraphSummary | null;
   lastDecision: GovernorDecision | null;
   recentErrors: readonly GovernorErrorRecord[];
 }

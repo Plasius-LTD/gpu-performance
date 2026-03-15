@@ -6,6 +6,7 @@ import type {
   GovernorErrorRecord,
   GovernorMetrics,
   GovernorState,
+  GovernorWorkerGraphSummary,
   GpuPerformanceGovernorOptions,
   PerformanceAdjustmentContext,
   PerformanceAdjustmentRecord,
@@ -274,6 +275,112 @@ function domainRank(
   return index >= 0 ? index : domainOrder.length + 1;
 }
 
+type WorkerDagSnapshot = PerformanceModuleSnapshot & {
+  priority: number;
+  dependencies: readonly string[];
+  dependents: readonly string[];
+  dependencyCount: number;
+  unresolvedDependencyCount: number;
+  dependentCount: number;
+  root: boolean;
+  schedulerMode: "flat" | "dag";
+};
+
+function toWorkerDagSnapshot(
+  snapshot: PerformanceModuleSnapshot
+): WorkerDagSnapshot | null {
+  if (
+    typeof (snapshot as { priority?: unknown }).priority !== "number" ||
+    !Array.isArray((snapshot as { dependencies?: unknown }).dependencies) ||
+    !Array.isArray((snapshot as { dependents?: unknown }).dependents) ||
+    typeof (snapshot as { dependencyCount?: unknown }).dependencyCount !== "number" ||
+    typeof (snapshot as { unresolvedDependencyCount?: unknown }).unresolvedDependencyCount !==
+      "number" ||
+    typeof (snapshot as { dependentCount?: unknown }).dependentCount !== "number" ||
+    typeof (snapshot as { root?: unknown }).root !== "boolean" ||
+    ((snapshot as { schedulerMode?: unknown }).schedulerMode !== "flat" &&
+      (snapshot as { schedulerMode?: unknown }).schedulerMode !== "dag")
+  ) {
+    return null;
+  }
+
+  return snapshot as WorkerDagSnapshot;
+}
+
+function buildWorkerGraphSummary(
+  snapshots: readonly PerformanceModuleSnapshot[]
+): GovernorWorkerGraphSummary | null {
+  const dagSnapshots = snapshots
+    .map((snapshot) => toWorkerDagSnapshot(snapshot))
+    .filter((snapshot): snapshot is WorkerDagSnapshot => snapshot?.schedulerMode === "dag");
+
+  if (dagSnapshots.length === 0) {
+    return null;
+  }
+
+  const lanes = new Map<number, { priority: number; jobCount: number; rootCount: number; protectedJobCount: number }>();
+  const roots: string[] = [];
+  let protectedJobCount = 0;
+  let maxPriority = 0;
+  let maxDependentCount = 0;
+
+  for (const snapshot of dagSnapshots) {
+    if (snapshot.root) {
+      roots.push(snapshot.id);
+    }
+
+    const isProtected =
+      snapshot.authority === "authoritative" ||
+      snapshot.root ||
+      snapshot.priority > 0 ||
+      snapshot.dependentCount > 0;
+    if (isProtected) {
+      protectedJobCount += 1;
+    }
+
+    maxPriority = Math.max(maxPriority, snapshot.priority);
+    maxDependentCount = Math.max(maxDependentCount, snapshot.dependentCount);
+
+    const lane = lanes.get(snapshot.priority) ?? {
+      priority: snapshot.priority,
+      jobCount: 0,
+      rootCount: 0,
+      protectedJobCount: 0,
+    };
+    lane.jobCount += 1;
+    if (snapshot.root) {
+      lane.rootCount += 1;
+    }
+    if (isProtected) {
+      lane.protectedJobCount += 1;
+    }
+    lanes.set(snapshot.priority, lane);
+  }
+
+  return Object.freeze({
+    schedulerMode: "dag",
+    jobCount: dagSnapshots.length,
+    rootCount: roots.length,
+    protectedJobCount,
+    degradableJobCount: dagSnapshots.length - protectedJobCount,
+    maxPriority,
+    maxDependentCount,
+    roots: Object.freeze([...roots]),
+    priorityLanes: Object.freeze(
+      [...lanes.values()]
+        .sort((left, right) => right.priority - left.priority)
+        .map((lane) =>
+          Object.freeze({
+            priority: lane.priority,
+            jobCount: lane.jobCount,
+            rootCount: lane.rootCount,
+            protectedJobCount: lane.protectedJobCount,
+          })
+        )
+    ),
+  });
+}
+
 function rankForDegrade(
   snapshot: PerformanceModuleSnapshot,
   domainOrder: readonly PerformanceDomain[],
@@ -298,20 +405,36 @@ function rankForDegrade(
           ? 40
           : 60;
   const costScore = -(snapshot.estimatedCostMs ?? 0);
+  const workerDag = toWorkerDagSnapshot(snapshot);
+  const dagProtectionScore =
+    workerDag?.schedulerMode === "dag"
+      ? (workerDag.root ? 120 : 0) +
+        workerDag.priority * 25 +
+        workerDag.dependentCount * 18
+      : 0;
 
   return (
     authorityScore +
     importanceScore +
     domainRank(snapshot.domain, domainOrder) * 10 +
-    costScore
+    costScore +
+    dagProtectionScore
   );
 }
 
-function buildReason(pressureLevel: PressureLevel, metrics: GovernorMetrics): string {
+function buildReason(
+  pressureLevel: PressureLevel,
+  metrics: GovernorMetrics,
+  workerGraph: GovernorWorkerGraphSummary | null
+): string {
   const average = metrics.averageFrameTimeMs.toFixed(2);
   const target = metrics.targetFrameTimeMs.toFixed(2);
   const trend = metrics.trendDeltaMs.toFixed(2);
-  return `${pressureLevel} pressure: avg ${average} ms vs target ${target} ms, trend delta ${trend} ms.`;
+  const graphNote =
+    workerGraph && workerGraph.schedulerMode === "dag"
+      ? ` DAG roots ${workerGraph.rootCount}/${workerGraph.jobCount}, max priority ${workerGraph.maxPriority}, max fan-out ${workerGraph.maxDependentCount}.`
+      : "";
+  return `${pressureLevel} pressure: avg ${average} ms vs target ${target} ms, trend delta ${trend} ms.${graphNote}`;
 }
 
 function sanitizeErrorMessage(error: unknown): string {
@@ -514,13 +637,15 @@ export function createGpuPerformanceGovernor(
   const createContext = (
     cause: "degrade" | "recover",
     pressureLevel: PressureLevel,
-    metrics: GovernorMetrics
+    metrics: GovernorMetrics,
+    workerGraph: GovernorWorkerGraphSummary | null
   ): PerformanceAdjustmentContext => ({
     cycle,
     cause,
     pressureLevel,
     metrics,
     target,
+    workerGraph,
   });
 
   const classifyCurrentPressure = (metrics: GovernorMetrics) =>
@@ -535,6 +660,7 @@ export function createGpuPerformanceGovernor(
     processed: boolean,
     pressureLevel: PressureLevel,
     metrics: GovernorMetrics,
+    workerGraph: GovernorWorkerGraphSummary | null,
     adjustments: readonly PerformanceAdjustmentRecord[],
     errors: readonly GovernorErrorRecord[],
     reason: string
@@ -543,6 +669,7 @@ export function createGpuPerformanceGovernor(
     processed,
     pressureLevel,
     metrics,
+    workerGraph,
     adjustments,
     errors,
     reason,
@@ -556,8 +683,18 @@ export function createGpuPerformanceGovernor(
       lastDecision?.metrics ??
       createMetrics(samples, emaFrameTimeMs, target.targetFrameTimeMs, lastThermalState);
     const pressureLevel = lastDecision?.pressureLevel ?? classifyCurrentPressure(metrics);
+    const workerGraph =
+      lastDecision?.workerGraph ?? buildWorkerGraphSummary(getModuleSnapshots());
 
-    return buildDecision(false, pressureLevel, metrics, [], errors, reason);
+    return buildDecision(
+      false,
+      pressureLevel,
+      metrics,
+      workerGraph,
+      [],
+      errors,
+      reason
+    );
   };
 
   const rememberFrameId = (frameId: string): boolean => {
@@ -632,6 +769,7 @@ export function createGpuPerformanceGovernor(
   const attemptDowngrade = (
     pressureLevel: PressureLevel,
     metrics: GovernorMetrics,
+    workerGraph: GovernorWorkerGraphSummary | null,
     decisionErrors: GovernorErrorRecord[],
     correlationId?: string
   ): PerformanceAdjustmentRecord[] => {
@@ -642,7 +780,7 @@ export function createGpuPerformanceGovernor(
             adaptation.maxStepChangesPerCycle,
             pressureLevel === "critical" ? 2 : 1
           );
-    const context = createContext("degrade", pressureLevel, metrics);
+    const context = createContext("degrade", pressureLevel, metrics, workerGraph);
     const adjustments: PerformanceAdjustmentRecord[] = [];
 
     for (const module of selectDegradeCandidates(decisionErrors, correlationId)) {
@@ -679,10 +817,11 @@ export function createGpuPerformanceGovernor(
 
   const attemptRecovery = (
     metrics: GovernorMetrics,
+    workerGraph: GovernorWorkerGraphSummary | null,
     decisionErrors: GovernorErrorRecord[],
     correlationId?: string
   ): PerformanceAdjustmentRecord[] => {
-    const context = createContext("recover", "recovering", metrics);
+    const context = createContext("recover", "recovering", metrics, workerGraph);
 
     while (recoveryStack.length > 0) {
       const moduleId = recoveryStack[recoveryStack.length - 1];
@@ -761,6 +900,7 @@ export function createGpuPerformanceGovernor(
         target.targetFrameTimeMs,
         lastThermalState
       );
+      const workerGraph = buildWorkerGraphSummary(getModuleSnapshots());
       const pressureLevel = classifyCurrentPressure(metrics);
 
       if (pressureLevel === "recovering" || pressureLevel === "stable") {
@@ -784,6 +924,7 @@ export function createGpuPerformanceGovernor(
         adjustments = attemptDowngrade(
           pressureLevel,
           metrics,
+          workerGraph,
           decisionErrors,
           sample.frameId
         );
@@ -797,7 +938,12 @@ export function createGpuPerformanceGovernor(
         stableRecoveryFrames >= adaptation.minStableFramesForRecovery &&
         cycle - lastUpCycle >= adaptation.upgradeCooldownFrames
       ) {
-        adjustments = attemptRecovery(metrics, decisionErrors, sample.frameId);
+        adjustments = attemptRecovery(
+          metrics,
+          workerGraph,
+          decisionErrors,
+          sample.frameId
+        );
         if (adjustments.length > 0) {
           lastUpCycle = cycle;
           stableRecoveryFrames = 0;
@@ -808,9 +954,10 @@ export function createGpuPerformanceGovernor(
         true,
         pressureLevel,
         metrics,
+        workerGraph,
         adjustments,
         decisionErrors,
-        buildReason(pressureLevel, metrics)
+        buildReason(pressureLevel, metrics, workerGraph)
       );
 
       emitTelemetry(
@@ -856,12 +1003,14 @@ export function createGpuPerformanceGovernor(
       return target;
     },
     getState(): GovernorState {
+      const moduleSnapshots = getModuleSnapshots();
       return {
         cycle,
         target,
         device,
         metrics: lastDecision?.metrics ?? null,
-        modules: getModuleSnapshots(),
+        modules: moduleSnapshots,
+        workerGraph: buildWorkerGraphSummary(moduleSnapshots),
         lastDecision,
         recentErrors,
       };

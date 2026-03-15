@@ -31,6 +31,7 @@ function createContext(): PerformanceAdjustmentContext {
       candidateFrameRates: [120, 90, 72, 60],
       rationale: ["test"],
     },
+    workerGraph: null,
   };
 }
 

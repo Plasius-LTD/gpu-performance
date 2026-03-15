@@ -414,6 +414,9 @@ export function createWorkerJobBudgetAdapter(
     dependentCount,
     root,
     schedulerMode,
+    getSnapshot() {
+      return getWorkerSnapshot();
+    },
     getBudget() {
       return ladder.getCurrentLevel().config;
     },

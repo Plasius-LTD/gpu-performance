@@ -290,6 +290,7 @@ describe("worker job budget adapter", () => {
         candidateFrameRates: [72],
         rationale: [],
       },
+      workerGraph: null,
     });
 
     expect(seen).toEqual(["direct-lighting:high"]);
