@@ -11,6 +11,8 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 - **Added**
   - Governor decision and state snapshots now expose compact DAG worker-graph
     summaries when registered modules publish worker metadata.
+  - ADR, TDR, and test-first planning coverage for multi-dimensional LOD and
+    importance-based ray-tracing budget governance.
 
 - **Changed**
   - CI and CD workflows now upload coverage through the Codecov CLI instead of
