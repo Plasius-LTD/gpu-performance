@@ -307,6 +307,82 @@ function toWorkerDagSnapshot(
   return snapshot as WorkerDagSnapshot;
 }
 
+const representationBandProtectionScores = Object.freeze({
+  near: 140,
+  mid: 80,
+  far: 20,
+  horizon: 0,
+});
+
+const motionProtectionScores = Object.freeze({
+  stable: 0,
+  dynamic: 12,
+  volatile: 24,
+});
+
+const dimensionBiasScores = Object.freeze({
+  geometry: 22,
+  animation: 16,
+  deformation: 20,
+  shading: 10,
+  shadows: 8,
+  rayTracing: 4,
+  lightingSamples: -8,
+  updateCadence: -24,
+  temporalReuse: -20,
+});
+
+function importanceWeight(value: string | undefined): number {
+  return value === "critical"
+    ? 20
+    : value === "high"
+      ? 12
+      : value === "medium"
+        ? 6
+        : 0;
+}
+
+function rankBudgetMetadata(snapshot: PerformanceModuleSnapshot): number {
+  const representationBand =
+    snapshot.representationBand &&
+    snapshot.representationBand in representationBandProtectionScores
+      ? snapshot.representationBand
+      : undefined;
+  const qualityDimensions =
+    snapshot.qualityDimensions && typeof snapshot.qualityDimensions === "object"
+      ? snapshot.qualityDimensions
+      : {};
+  const importanceSignals =
+    snapshot.importanceSignals && typeof snapshot.importanceSignals === "object"
+      ? snapshot.importanceSignals
+      : {};
+
+  const bandScore = representationBand
+    ? representationBandProtectionScores[representationBand]
+    : 0;
+  const visibilityScore =
+    (importanceSignals.visible ? 26 : 0) +
+    (importanceSignals.playerRelevant ? 24 : 0) +
+    (importanceSignals.imageCritical ? 18 : 0);
+  const motionScore =
+    importanceSignals.motionClass &&
+    importanceSignals.motionClass in motionProtectionScores
+      ? motionProtectionScores[importanceSignals.motionClass]
+      : 0;
+  const significanceScore =
+    importanceWeight(importanceSignals.shadowSignificance) +
+    importanceWeight(importanceSignals.reflectionSignificance);
+  const dimensionScore = Object.entries(qualityDimensions).reduce(
+    (total, [dimension, weight]) =>
+      total +
+      ((dimensionBiasScores as Record<string, number>)[dimension] ?? 0) *
+        (typeof weight === "number" ? weight : 0),
+    0
+  );
+
+  return bandScore + visibilityScore + motionScore + significanceScore + dimensionScore;
+}
+
 function buildWorkerGraphSummary(
   snapshots: readonly PerformanceModuleSnapshot[]
 ): GovernorWorkerGraphSummary | null {
@@ -412,13 +488,15 @@ function rankForDegrade(
         workerDag.priority * 25 +
         workerDag.dependentCount * 18
       : 0;
+  const budgetMetadataScore = rankBudgetMetadata(snapshot);
 
   return (
     authorityScore +
     importanceScore +
     domainRank(snapshot.domain, domainOrder) * 10 +
     costScore +
-    dagProtectionScore
+    dagProtectionScore +
+    budgetMetadataScore
   );
 }
 

@@ -1,4 +1,5 @@
 import { createQualityLadderAdapter } from "./ladder.js";
+import { normalizePerformanceBudgetMetadata } from "./budget.js";
 import type {
   ModuleQualityLevel,
   WorkerJobBudgetAdapter,
@@ -252,6 +253,10 @@ function buildManifestGraph(
     }
 
     const id = assertIdentifier(`jobs[${index}].performance.id`, job.performance.id);
+    const metadata = normalizePerformanceBudgetMetadata(
+      `jobs[${index}].performance`,
+      job.performance
+    );
 
     return {
       id,
@@ -259,6 +264,9 @@ function buildManifestGraph(
       label: typeof job.label === "string" ? job.label : undefined,
       jobType: resolveManifestJobType(job, index),
       queueClass: resolveManifestQueueClass(job, index),
+      representationBand: metadata.representationBand,
+      qualityDimensions: metadata.qualityDimensions,
+      importanceSignals: metadata.importanceSignals,
       priority: resolveManifestPriority(job, index),
       dependencies: resolveManifestDependencies(job, index),
       schedulerMode: resolveManifestSchedulerMode(manifest, job, index),
@@ -345,6 +353,15 @@ function buildManifestGraph(
       (current, job) => Math.max(current, job.priority),
       0
     ),
+    representationBands: Object.freeze(
+      [
+        ...new Set(
+          graphJobs
+            .map((job) => job.representationBand)
+            .filter((band): band is NonNullable<typeof band> => typeof band === "string")
+        ),
+      ]
+    ),
     jobIds: Object.freeze(graphJobs.map((job) => job.id)),
     roots: Object.freeze(graphJobs.filter((job) => job.root).map((job) => job.id)),
     topologicalOrder: Object.freeze(topologicalOrder),
@@ -375,6 +392,7 @@ export function createWorkerJobBudgetAdapter(
   const unresolvedDependencyCount = dependencyCount;
   const dependentCount = dependents.length;
   const root = dependencyCount === 0;
+  const metadata = normalizePerformanceBudgetMetadata("budget metadata", options);
 
   const levels = options.levels.map(normalizeBudgetLevel);
 
@@ -390,6 +408,9 @@ export function createWorkerJobBudgetAdapter(
 
   const getWorkerSnapshot = (): WorkerJobBudgetSnapshot => ({
     ...ladder.getSnapshot(),
+    representationBand: metadata.representationBand,
+    qualityDimensions: metadata.qualityDimensions,
+    importanceSignals: metadata.importanceSignals,
     jobType,
     queueClass,
     priority,
@@ -406,6 +427,9 @@ export function createWorkerJobBudgetAdapter(
     ...ladder,
     jobType,
     queueClass,
+    representationBand: metadata.representationBand,
+    qualityDimensions: metadata.qualityDimensions,
+    importanceSignals: metadata.importanceSignals,
     priority,
     dependencies,
     dependents,
@@ -473,6 +497,9 @@ export function createWorkerJobBudgetAdaptersFromManifest(
         domain: job.performance.domain,
         authority: job.performance.authority,
         importance: job.performance.importance,
+        representationBand: job.performance.representationBand,
+        qualityDimensions: job.performance.qualityDimensions,
+        importanceSignals: job.performance.importanceSignals,
         levels: job.performance.levels,
         initialLevel: initialLevels?.[id],
         onLevelChange:

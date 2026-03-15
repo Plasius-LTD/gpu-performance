@@ -43,6 +43,8 @@ import {
   createGpuPerformanceGovernor,
   createQualityLadderAdapter,
   createWorkerJobBudgetAdapter,
+  rayTracingQualityDimensions,
+  representationBands,
 } from "@plasius/gpu-performance";
 
 const device = createDeviceProfile({
@@ -90,9 +92,28 @@ const physics = createQualityLadderAdapter({
   ],
 });
 
+const reflections = createQualityLadderAdapter({
+  id: "reflections",
+  domain: "reflections",
+  representationBand: "far",
+  qualityDimensions: {
+    rayTracing: 1,
+    updateCadence: 1,
+    temporalReuse: 1,
+  },
+  importanceSignals: {
+    visible: false,
+    reflectionSignificance: "medium",
+  },
+  levels: [
+    { id: "reduced", config: { raysPerPixel: 1 }, estimatedCostMs: 0.8 },
+    { id: "full", config: { raysPerPixel: 4 }, estimatedCostMs: 2.1 },
+  ],
+});
+
 const governor = createGpuPerformanceGovernor({
   device,
-  modules: [renderScale, cloth, physics],
+  modules: [renderScale, cloth, reflections, physics],
 });
 
 for (const [index, frameTimeMs] of [12.8, 13.1, 18.4, 18.9, 19.2, 18.8, 18.1, 17.9].entries()) {
@@ -105,6 +126,24 @@ for (const [index, frameTimeMs] of [12.8, 13.1, 18.4, 18.9, 19.2, 18.8, 18.1, 17
   }
 }
 ```
+
+Ray-tracing-first budget metadata is part of the public contract:
+
+- `representationBands`: `near`, `mid`, `far`, `horizon`
+- `rayTracingQualityDimensions`:
+  - `geometry`
+  - `animation`
+  - `deformation`
+  - `shading`
+  - `shadows`
+  - `rayTracing`
+  - `lightingSamples`
+  - `updateCadence`
+  - `temporalReuse`
+
+That lets modules preserve representation tiers and degrade cheaper cadence,
+history, and RT-fidelity controls before more expensive geometry or
+authoritative work.
 
 ## Worker-Job Governance
 
@@ -231,6 +270,9 @@ debug-only. The governor now:
 - `createDeviceProfile(input)`
 - `negotiateFrameTarget(options)`
 - `createQualityLadderAdapter(options)`
+- `representationBands`
+- `rayTracingQualityDimensions`
+- `motionClasses`
 - `createWorkerJobBudgetAdapter(options)`
 - `createWorkerJobBudgetManifestGraph(manifest)`
 - `createWorkerJobBudgetAdaptersFromManifest(manifest, options?)`

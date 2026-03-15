@@ -13,12 +13,21 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
     summaries when registered modules publish worker metadata.
   - ADR, TDR, and test-first planning coverage for multi-dimensional LOD and
     importance-based ray-tracing budget governance.
+  - Added ray-tracing-first budget metadata exports for representation bands,
+    quality dimensions, and motion classes.
+  - Added tests covering multi-dimensional quality contracts, representation
+    tier preservation, cadence-vs-geometry ranking, and RT-vs-raster ranking.
 
 - **Changed**
   - CI and CD workflows now upload coverage through the Codecov CLI instead of
     the JavaScript action wrapper, removing the remaining Node 20 action path.
   - Degrade selection now protects DAG roots, higher-priority jobs, and
     higher-fan-out jobs before lower-value leaf work.
+  - Quality ladder adapters, worker-job budget adapters, and manifest graph
+    normalization now preserve representation-band, quality-dimension, and
+    importance-signal metadata.
+  - Governor ranking now accounts for representation tiers, cadence/history
+    degradability, and RT fidelity separately from raster geometry.
 
 - **Fixed**
   - (placeholder)

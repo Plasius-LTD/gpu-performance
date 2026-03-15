@@ -2,6 +2,7 @@ import type {
   ModuleImportance,
   ModuleQualityLevel,
   ModuleAuthority,
+  PerformanceBudgetMetadata,
   PerformanceAdjustmentContext,
   PerformanceAdjustmentRecord,
   PerformanceDomain,
@@ -9,6 +10,7 @@ import type {
   QualityLadderAdapter,
   QualityLadderAdapterOptions,
 } from "./types.js";
+import { normalizePerformanceBudgetMetadata } from "./budget.js";
 import {
   assertEnumValue,
   assertIdentifier,
@@ -67,6 +69,7 @@ function buildSnapshot<Payload>(
   domain: PerformanceDomain,
   authority: ModuleAuthority,
   importance: ModuleImportance,
+  metadata: PerformanceBudgetMetadata,
   levels: readonly ModuleQualityLevel<Payload>[],
   currentLevelIndex: number
 ): PerformanceModuleSnapshot<Payload> {
@@ -77,6 +80,9 @@ function buildSnapshot<Payload>(
     domain,
     authority,
     importance,
+    representationBand: metadata.representationBand,
+    qualityDimensions: metadata.qualityDimensions,
+    importanceSignals: metadata.importanceSignals,
     currentLevelIndex,
     currentLevel,
     levelCount: levels.length,
@@ -146,6 +152,7 @@ export function createQualityLadderAdapter<Payload>(
       : assertEnumValue("importance", options.importance, moduleImportances);
   const domain = assertEnumValue("domain", options.domain, performanceDomains);
   const levels = [...options.levels];
+  const metadata = normalizePerformanceBudgetMetadata("budget metadata", options);
   let currentLevelIndex = resolveLevelIndex(levels, options.initialLevel);
 
   const emitChange = (
@@ -204,6 +211,9 @@ export function createQualityLadderAdapter<Payload>(
     domain,
     authority,
     importance,
+    representationBand: metadata.representationBand,
+    qualityDimensions: metadata.qualityDimensions,
+    importanceSignals: metadata.importanceSignals,
     getCurrentLevel() {
       return levels[currentLevelIndex]!;
     },
@@ -213,6 +223,7 @@ export function createQualityLadderAdapter<Payload>(
         domain,
         authority,
         importance,
+        metadata,
         levels,
         currentLevelIndex
       );

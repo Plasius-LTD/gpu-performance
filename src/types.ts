@@ -72,6 +72,58 @@ export type ModuleAuthority =
 export type ModuleImportance = "low" | "medium" | "high" | "critical";
 
 /**
+ * Range-banded representation tier used by ray-tracing-first planning.
+ */
+export type RepresentationBand = "near" | "mid" | "far" | "horizon";
+
+/**
+ * Independent quality dimensions used for ray-tracing-first budget control.
+ */
+export type QualityDimension =
+  | "geometry"
+  | "animation"
+  | "deformation"
+  | "shading"
+  | "shadows"
+  | "rayTracing"
+  | "lightingSamples"
+  | "updateCadence"
+  | "temporalReuse";
+
+/**
+ * Motion stability hint used when ranking adaptive work.
+ */
+export type MotionClass = "stable" | "dynamic" | "volatile";
+
+/**
+ * Multi-dimensional quality emphasis carried by module adapters.
+ */
+export type PerformanceQualityDimensions = Readonly<
+  Partial<Record<QualityDimension, number>>
+>;
+
+/**
+ * Additional importance signals used when ranking modules under pressure.
+ */
+export interface PerformanceImportanceSignals {
+  visible?: boolean;
+  playerRelevant?: boolean;
+  imageCritical?: boolean;
+  motionClass?: MotionClass;
+  shadowSignificance?: ModuleImportance;
+  reflectionSignificance?: ModuleImportance;
+}
+
+/**
+ * Optional metadata used by ray-tracing-first budget governance.
+ */
+export interface PerformanceBudgetMetadata {
+  representationBand?: RepresentationBand;
+  qualityDimensions?: PerformanceQualityDimensions;
+  importanceSignals?: Readonly<PerformanceImportanceSignals>;
+}
+
+/**
  * Pressure states emitted by the governor after each frame sample.
  */
 export type PressureLevel =
@@ -188,6 +240,9 @@ export interface PerformanceModuleSnapshot<Payload = unknown> {
   domain: PerformanceDomain;
   authority: ModuleAuthority;
   importance: ModuleImportance;
+  representationBand?: RepresentationBand;
+  qualityDimensions?: PerformanceQualityDimensions;
+  importanceSignals?: Readonly<PerformanceImportanceSignals>;
   currentLevelIndex: number;
   currentLevel: ModuleQualityLevel<Payload>;
   levelCount: number;
@@ -273,6 +328,9 @@ export interface QualityLadderAdapterOptions<Payload = unknown> {
   domain: PerformanceDomain;
   authority?: ModuleAuthority;
   importance?: ModuleImportance;
+  representationBand?: RepresentationBand;
+  qualityDimensions?: PerformanceQualityDimensions;
+  importanceSignals?: Readonly<PerformanceImportanceSignals>;
   levels: readonly ModuleQualityLevel<Payload>[];
   initialLevel?: number | string;
   onLevelChange?: (event: QualityLadderChangeEvent<Payload>) => void;
@@ -283,6 +341,9 @@ export interface QualityLadderAdapterOptions<Payload = unknown> {
  */
 export interface QualityLadderAdapter<Payload = unknown>
   extends PerformanceModuleAdapter<Payload> {
+  representationBand?: RepresentationBand;
+  qualityDimensions?: PerformanceQualityDimensions;
+  importanceSignals?: Readonly<PerformanceImportanceSignals>;
   getCurrentLevel(): ModuleQualityLevel<Payload>;
 }
 
@@ -312,6 +373,9 @@ export interface WorkerJobBudgetAdapterOptions {
   domain?: PerformanceDomain;
   authority?: ModuleAuthority;
   importance?: ModuleImportance;
+  representationBand?: RepresentationBand;
+  qualityDimensions?: PerformanceQualityDimensions;
+  importanceSignals?: Readonly<PerformanceImportanceSignals>;
   levels: readonly ModuleQualityLevel<WorkerJobBudgetConfig>[];
   initialLevel?: number | string;
   onLevelChange?: (event: QualityLadderChangeEvent<WorkerJobBudgetConfig>) => void;
@@ -327,6 +391,9 @@ export interface WorkerJobBudgetManifestPerformance {
   domain?: PerformanceDomain;
   authority?: ModuleAuthority;
   importance?: ModuleImportance;
+  representationBand?: RepresentationBand;
+  qualityDimensions?: PerformanceQualityDimensions;
+  importanceSignals?: Readonly<PerformanceImportanceSignals>;
   levels: readonly ModuleQualityLevel<WorkerJobBudgetConfig>[];
 }
 
@@ -379,6 +446,9 @@ export interface WorkerJobBudgetManifestGraphJob {
   label?: string;
   jobType: string;
   queueClass: WorkerJobQueueClass;
+  representationBand?: RepresentationBand;
+  qualityDimensions?: PerformanceQualityDimensions;
+  importanceSignals?: Readonly<PerformanceImportanceSignals>;
   priority: number;
   dependencies: readonly string[];
   dependents: readonly string[];
@@ -407,6 +477,7 @@ export interface WorkerJobBudgetManifestGraph {
   schedulerMode: WorkerSchedulerMode;
   jobCount: number;
   maxPriority: number;
+  representationBands: readonly RepresentationBand[];
   jobIds: readonly string[];
   roots: readonly string[];
   topologicalOrder: readonly string[];

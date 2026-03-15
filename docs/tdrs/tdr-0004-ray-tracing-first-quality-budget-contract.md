@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Goal
 
@@ -57,3 +57,11 @@ Unit tests should prove that:
 - near-field work outranks far-field work when pressure rises
 - leaf or proxy work degrades before high-fan-out RT or lighting roots
 - temporal reuse and update cadence can scale independently from geometry cost
+
+## Implementation Notes
+
+The first public implementation now extends ladder and worker-budget adapters
+with `representationBand`, `qualityDimensions`, and `importanceSignals`
+metadata. The governor now uses those inputs when ranking degrade candidates,
+and manifest graph normalization preserves representation tiers instead of
+dropping them.
