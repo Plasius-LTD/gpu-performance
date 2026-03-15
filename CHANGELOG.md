@@ -9,6 +9,20 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 ## [Unreleased]
 
 - **Added**
+  - (placeholder)
+
+- **Changed**
+  - (placeholder)
+
+- **Fixed**
+  - (placeholder)
+
+- **Security**
+  - (placeholder)
+
+## [0.1.2] - 2026-03-15
+
+- **Added**
   - Governor decision and state snapshots now expose compact DAG worker-graph
     summaries when registered modules publish worker metadata.
   - ADR, TDR, and test-first planning coverage for multi-dimensional LOD and
@@ -109,3 +123,4 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 [0.1.0]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.0
 [0.1.1]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.1
+[0.1.2]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.2
