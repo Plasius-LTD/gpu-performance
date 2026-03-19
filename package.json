@@ -25,7 +25,8 @@
   "scripts": {
     "build": "tsup",
     "clean": "rimraf dist coverage",
-    "demo": "tsx demo/example.ts",
+    "demo": "python3 -m http.server --directory ..",
+    "demo:example": "tsx demo/example.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",

@@ -21,6 +21,18 @@ Apache-2.0. ESM + CJS builds. TypeScript types included.
 npm install @plasius/gpu-performance
 ```
 
+## Browser Demo
+
+```bash
+npm run demo
+```
+
+Then open `http://localhost:8000/gpu-performance/demo/`.
+
+`npm run demo` now mounts the adaptive governor against the shared 3D harbor
+scene so quality changes are visible, while `npm run demo:example` keeps the
+console example path.
+
 ## What It Solves
 
 - Negotiates frame targets by device mode and refresh characteristics.
