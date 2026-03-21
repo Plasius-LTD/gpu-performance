@@ -1,1 +1,1 @@
-export { loadGltfModel } from "../../gpu-demo-viewer/shared/gltf-loader.js";
+export { loadGltfModel } from "../../gpu-shared/dist/index.js";

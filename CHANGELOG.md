@@ -13,8 +13,8 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
     against visible scene quality changes.
 
 - **Changed**
-  - `gpu-performance/demo/` now delegates its 3D harbor scene to the shared
-    `gpu-demo-viewer` showcase runtime instead of carrying a package-local copy
+- `gpu-performance/demo/` now delegates its 3D harbor scene to the shared
+    `@plasius/gpu-shared` showcase runtime instead of carrying a package-local copy
     of the renderer and loader logic.
   - `demo:example` remains available for the console example.
   - The harbor runtime now renders stronger near-field shadow projection and

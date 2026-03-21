@@ -111,7 +111,7 @@ function describeState(state) {
       `adaptations recorded: ${decision.adjustments.length}`,
     ],
     notes: [
-      "This demo now runs on the shared gpu-demo-viewer harbor runtime instead of carrying its own local scene renderer copy.",
+      "This demo now runs on the shared @plasius/gpu-shared harbor runtime instead of carrying its own local scene renderer copy.",
       "Stress mode drives the governor into degrade paths so the harbor visibly simplifies and then recovers.",
       "The ships keep colliding while cloth, reflections, and wave detail step down first.",
     ],

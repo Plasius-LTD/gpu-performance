@@ -1,1 +1,1 @@
-export { mountGpuShowcase as mountHarborShowcase } from "../../gpu-demo-viewer/shared/showcase-runtime.js";
+export { mountGpuShowcase as mountHarborShowcase } from "../../gpu-shared/dist/index.js";
