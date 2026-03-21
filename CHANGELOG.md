@@ -13,8 +13,9 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
     against visible scene quality changes.
 
 - **Changed**
-  - `gpu-performance/demo/` is now self-contained, with a local harbor runtime,
-    GLTF ship asset, and loader instead of a sibling-repo showcase import.
+  - `gpu-performance/demo/` now delegates its 3D harbor scene to the shared
+    `gpu-demo-viewer` showcase runtime instead of carrying a package-local copy
+    of the renderer and loader logic.
   - `demo:example` remains available for the console example.
   - The harbor runtime now renders stronger near-field shadow projection and
     reflection accents, so governor-driven quality shifts are easier to see.
