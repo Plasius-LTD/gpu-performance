@@ -1,1 +1,1 @@
-export { loadGltfModel } from "../../gpu-shared/dist/index.js";
+export { loadGltfModel } from "../node_modules/@plasius/gpu-shared/dist/index.js";

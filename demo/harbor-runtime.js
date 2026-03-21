@@ -1,1 +1,1 @@
-export { mountGpuShowcase as mountHarborShowcase } from "../../gpu-shared/dist/index.js";
+export { mountGpuShowcase as mountHarborShowcase } from "../node_modules/@plasius/gpu-shared/dist/index.js";
