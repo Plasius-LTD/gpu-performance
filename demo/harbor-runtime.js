@@ -262,6 +262,11 @@ function normalizeVec3(a) {
   return vec3(a.x / length, a.y / length, a.z / length);
 }
 
+function reflectVec3(vector, normal) {
+  const unitNormal = normalizeVec3(normal);
+  return subVec3(vector, scaleVec3(unitNormal, 2 * dotVec3(vector, unitNormal)));
+}
+
 function rotateY(point, angle) {
   const cosine = Math.cos(angle);
   const sine = Math.sin(angle);
@@ -305,6 +310,20 @@ function colorToRgba(color, alpha = 1) {
   const g = Math.round(clamp(color.g, 0, 1) * 255);
   const b = Math.round(clamp(color.b, 0, 1) * 255);
   return `rgba(${r}, ${g}, ${b}, ${clamp(alpha, 0, 1)})`;
+}
+
+function projectShadowPoint(point, lightDir, planeY) {
+  const shadowDir = scaleVec3(lightDir, -1);
+  if (Math.abs(shadowDir.y) < 0.0001) {
+    return null;
+  }
+
+  const distance = (planeY - point.y) / shadowDir.y;
+  if (!Number.isFinite(distance) || distance < 0) {
+    return null;
+  }
+
+  return addVec3(point, scaleVec3(shadowDir, distance));
 }
 
 function shadeColor(base, normal, lightDir, heightBias = 0, accent = 0) {
@@ -409,7 +428,7 @@ function buildDemoDom(root, options) {
             <strong>Scene</strong>
             Local GLTF ships with collision metadata.<br />
             Harbor waves, a cloth flag, and package overlays.<br />
-            No sibling-repo imports are required.
+            Ray-traced shadow and reflection style is preserved near the camera.
           </div>
         </section>
         <aside class="plasius-demo__sidebar">
@@ -577,16 +596,17 @@ function createState(packageState) {
   };
 }
 
-function drawSkyAndSea(ctx, canvas, state, visuals) {
+function drawSkyAndSea(ctx, canvas, state, visuals, shadowStrength, reflectionStrength) {
+  const premiumShadows = shadowStrength > 0.34;
   const sky = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.5);
-  sky.addColorStop(0, visuals.skyTop ?? "#edf7fc");
-  sky.addColorStop(0.58, visuals.skyMid ?? "#b7cfdf");
-  sky.addColorStop(1, visuals.skyBottom ?? "#7ba2b7");
+  sky.addColorStop(0, visuals.skyTop ?? (premiumShadows ? "#f0f7fb" : "#e8f1f7"));
+  sky.addColorStop(0.58, visuals.skyMid ?? (premiumShadows ? "#c2d6e2" : "#b7cfdf"));
+  sky.addColorStop(1, visuals.skyBottom ?? (premiumShadows ? "#81a6bb" : "#7ba2b7"));
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const sea = ctx.createLinearGradient(0, canvas.height * 0.46, 0, canvas.height);
-  sea.addColorStop(0, visuals.seaTop ?? "#245167");
+  sea.addColorStop(0, visuals.seaTop ?? (premiumShadows ? "#215167" : "#245167"));
   sea.addColorStop(0.55, visuals.seaMid ?? "#123d52");
   sea.addColorStop(1, visuals.seaBottom ?? "#082331");
   ctx.fillStyle = sea;
@@ -602,28 +622,46 @@ function drawSkyAndSea(ctx, canvas, state, visuals) {
   ctx.arc(sunX, sunY, 94, 0, Math.PI * 2);
   ctx.fill();
 
+  const track = ctx.createLinearGradient(sunX, canvas.height * 0.46, sunX, canvas.height * 0.98);
+  track.addColorStop(0, `rgba(255, 243, 214, ${0.08 + reflectionStrength * 0.18})`);
+  track.addColorStop(0.38, `rgba(224, 242, 255, ${0.04 + reflectionStrength * 0.18})`);
+  track.addColorStop(1, "rgba(224, 242, 255, 0)");
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+  ctx.fillStyle = track;
+  ctx.beginPath();
+  ctx.ellipse(sunX, canvas.height * 0.73, 44 + shadowStrength * 58, canvas.height * 0.25, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
   if (state.collisionFlash > 0) {
     ctx.fillStyle = `rgba(255, 241, 224, ${state.collisionFlash * 0.16})`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 }
 
-function drawTriangles(ctx, triangles, lightDir, reflectionStrength) {
+function drawTriangles(ctx, triangles, lightDir, reflectionStrength, camera, shadowStrength) {
   triangles.sort((left, right) => right.depth - left.depth);
   for (const triangle of triangles) {
+    const surfaceNormal = normalizeVec3(triangle.normal);
     const shaded = shadeColor(
       triangle.baseColor,
-      triangle.normal,
+      surfaceNormal,
       lightDir,
       clamp((triangle.worldCenter.y + 3) / 10, 0, 1),
       triangle.accent
     );
     const reflection = triangle.worldCenter.y < 0.8 ? reflectionStrength : 0;
+    const viewDir = normalizeVec3(subVec3(camera.eye, triangle.worldCenter));
+    const reflectedLight = reflectVec3(scaleVec3(lightDir, -1), surfaceNormal);
+    const gloss = triangle.worldCenter.y < 0.9 ? 1 : triangle.accent > 0.05 ? 0.55 : 0.3;
+    const specular = Math.pow(clamp(dotVec3(reflectedLight, viewDir), 0, 1), triangle.worldCenter.y < 0.9 ? 18 : 12) * gloss;
+    const occlusion = triangle.worldCenter.y < 0.9 ? shadowStrength * 0.03 : 0;
     ctx.fillStyle = colorToRgba(
       {
-        r: shaded.r + reflection * 0.08,
-        g: shaded.g + reflection * 0.08,
-        b: shaded.b + reflection * 0.14,
+        r: clamp(shaded.r + reflection * 0.08 + specular * 0.14 - occlusion, 0, 1),
+        g: clamp(shaded.g + reflection * 0.08 + specular * 0.15 - occlusion, 0, 1),
+        b: clamp(shaded.b + reflection * 0.14 + specular * 0.2 - occlusion * 0.5, 0, 1),
       },
       0.98
     );
@@ -634,6 +672,33 @@ function drawTriangles(ctx, triangles, lightDir, reflectionStrength) {
     ctx.closePath();
     ctx.fill();
   }
+}
+
+function renderProjectedShadow(ctx, worldPoints, camera, viewport, lightDir, options = {}) {
+  const planeY = options.planeY ?? 0;
+  const projected = worldPoints
+    .map((point) => projectShadowPoint(point, lightDir, planeY))
+    .filter(Boolean)
+    .map((point) => projectPoint(point, camera, viewport))
+    .filter(Boolean);
+
+  if (projected.length < 3) {
+    return;
+  }
+
+  ctx.save();
+  ctx.globalCompositeOperation = "multiply";
+  ctx.fillStyle = options.color ?? `rgba(12, 24, 36, ${clamp(options.alpha ?? 0.14, 0, 0.5)})`;
+  ctx.shadowColor = options.color ?? "rgba(12, 24, 36, 0.22)";
+  ctx.shadowBlur = options.blur ?? 18;
+  ctx.beginPath();
+  ctx.moveTo(projected[0].x, projected[0].y);
+  for (let index = 1; index < projected.length; index += 1) {
+    ctx.lineTo(projected[index].x, projected[index].y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
 }
 
 function pushHarborGeometry(camera, viewport, triangles, visuals) {
@@ -805,6 +870,39 @@ function renderFlagPole(ctx, camera, viewport) {
   ctx.stroke();
 }
 
+function renderShipShadow(ctx, shipModel, ship, state, camera, viewport, lightDir, shadowStrength) {
+  const bounds = shipModel.bounds;
+  const keelY = (shipModel.physics.waterline ?? 0.42) - 0.28;
+  const transform = { position: ship.position, rotationY: ship.rotationY, scale: 1.1 };
+  const hullCorners = [
+    vec3(bounds.min[0], keelY, bounds.min[2]),
+    vec3(bounds.max[0], keelY, bounds.min[2]),
+    vec3(bounds.max[0], keelY, bounds.max[2]),
+    vec3(bounds.min[0], keelY, bounds.max[2]),
+  ].map((point) => transformPoint(point, transform));
+
+  renderProjectedShadow(ctx, hullCorners, camera, viewport, lightDir, {
+    planeY: sampleWave(ship.position.x, ship.position.z, state.time, 0.45) * 0.14 - 0.03,
+    alpha: 0.08 + shadowStrength * 0.18,
+    blur: 12 + shadowStrength * 24,
+  });
+}
+
+function renderFlagShadow(ctx, flag, camera, viewport, lightDir, shadowStrength) {
+  const clothPoints = [
+    flag.positions[0],
+    flag.positions[flag.cols - 1],
+    flag.positions[flag.positions.length - 1],
+    flag.positions[flag.positions.length - flag.cols],
+  ];
+
+  renderProjectedShadow(ctx, clothPoints, camera, viewport, lightDir, {
+    planeY: 0.56,
+    alpha: 0.05 + shadowStrength * 0.16,
+    blur: 12 + shadowStrength * 18,
+  });
+}
+
 function renderWaterHighlights(ctx, water, camera, viewport) {
   for (let row = 2; row < water.rows - 1; row += 2) {
     ctx.beginPath();
@@ -875,10 +973,11 @@ function renderScene(ctx, canvas, dom, state, shipModel, description) {
   const camera = buildCamera(canvas);
   const lightDir = normalizeVec3(vec3(-0.46, 0.84, -0.26));
   const reflectionStrength = clamp(visuals.reflectionStrength ?? 0.16, 0, 0.45);
+  const shadowStrength = clamp((visuals.shadowAccent ?? 0.05) * 6, 0.18, 0.72);
   const water = buildWaterSurface(state, visuals);
   const flag = buildFlagSurface(state, visuals);
 
-  drawSkyAndSea(ctx, canvas, state, visuals);
+  drawSkyAndSea(ctx, canvas, state, visuals, shadowStrength, reflectionStrength);
 
   const triangles = [];
   pushHarborGeometry(camera, viewport, triangles, visuals);
@@ -938,7 +1037,12 @@ function renderScene(ctx, canvas, dom, state, shipModel, description) {
     );
   }
 
-  drawTriangles(ctx, triangles, lightDir, reflectionStrength);
+  for (const ship of state.ships) {
+    renderShipShadow(ctx, shipModel, ship, state, camera, viewport, lightDir, shadowStrength);
+  }
+  renderFlagShadow(ctx, flag, camera, viewport, lightDir, shadowStrength);
+
+  drawTriangles(ctx, triangles, lightDir, reflectionStrength, camera, shadowStrength);
   renderWaterHighlights(ctx, water, camera, viewport);
   renderFlagPole(ctx, camera, viewport);
   renderFlagAccent(ctx, flag, camera, viewport);
