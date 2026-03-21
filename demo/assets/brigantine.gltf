@@ -1,0 +1,93 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "Plasius demo asset generator"
+  },
+  "scene": 0,
+  "scenes": [
+    {
+      "nodes": [0]
+    }
+  ],
+  "nodes": [
+    {
+      "mesh": 0,
+      "name": "brigantine",
+      "extras": {
+        "physics": {
+          "shape": "box",
+          "halfExtents": [1.35, 0.95, 3.9],
+          "mass": 3200,
+          "restitution": 0.22,
+          "linearDamping": 0.04,
+          "angularDamping": 0.08,
+          "waterline": 0.42
+        }
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "brigantine-hull",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0
+          },
+          "indices": 1,
+          "material": 0
+        }
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "painted-hull",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [0.56, 0.33, 0.22, 1],
+        "metallicFactor": 0.08,
+        "roughnessFactor": 0.92
+      }
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "data:application/octet-stream;base64,mpmZvwAAAL/NzEzAmpmZPwAAAL/NzEzAzcysvzMzs74zM7O/zcysPzMzs74zM7O/AACgv83MTL3NzMw/AACgP83MTL3NzMw/AAAAAOxROL4zM4NAAAAAAGZm5j4AAHBAMzNzvzMzsz6amRnAMzNzPzMzsz6amRnAzcxMvz0K1z7NzEw/zcxMPz0K1z7NzEw/AAAAADMzcz9mZma/AAACAAMAAAADAAEAAgAEAAUAAgAFAAMABAAHAAUABAAGAAcABQAHAAYAAAABAAkAAAAJAAgACAAJAAwAAgAIAAwAAwAMAAkAAgAMAAoAAwALAAwAAgAKAAQAAwAFAAsACgAMAAsAAAAIAAIAAQADAAkABAAKAAYABQAGAAsAAgAKAAsAAgALAAMA",
+      "byteLength": 294
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 156,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 156,
+      "byteLength": 138,
+      "target": 34963
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "byteOffset": 0,
+      "componentType": 5126,
+      "count": 13,
+      "type": "VEC3",
+      "min": [-1.35, -0.5, -3.2],
+      "max": [1.35, 0.95, 4.1]
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 0,
+      "componentType": 5123,
+      "count": 69,
+      "type": "SCALAR",
+      "max": [12],
+      "min": [0]
+    }
+  ]
+}
