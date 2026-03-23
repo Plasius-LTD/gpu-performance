@@ -9,6 +9,20 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 ## [Unreleased]
 
 - **Added**
+  - (placeholder)
+
+- **Changed**
+  - (placeholder)
+
+- **Fixed**
+  - (placeholder)
+
+- **Security**
+  - (placeholder)
+
+## [0.1.3] - 2026-03-23
+
+- **Added**
   - A browser-based 3D harbor demo so governor decisions can be validated
     against visible scene quality changes.
 
@@ -130,3 +144,4 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 [0.1.0]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.0
 [0.1.1]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.1
 [0.1.2]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.2
+[0.1.3]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.3
