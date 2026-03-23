@@ -62,7 +62,7 @@
   },
   "homepage": "https://github.com/Plasius-LTD/gpu-performance#readme",
   "dependencies": {
-    "@plasius/gpu-shared": "https://registry.npmjs.org/@plasius/gpu-shared/-/gpu-shared-0.1.0.tgz"
+    "@plasius/gpu-shared": "^0.1.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
