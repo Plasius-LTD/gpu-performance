@@ -9,10 +9,15 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 ## [Unreleased]
 
 - **Added**
-  - (placeholder)
+  - Contract tests that lock the browser demo to the public
+    `@plasius/gpu-shared` package surface.
 
 - **Changed**
-  - (placeholder)
+  - Browser demo imports now route through the public
+    `@plasius/gpu-shared` package surface via an import map instead of a deep
+    `node_modules` dist path.
+  - README browser-demo guidance now documents the supported shared-runtime
+    contract explicitly.
 
 - **Fixed**
   - (placeholder)

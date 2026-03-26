@@ -30,7 +30,8 @@ npm run demo
 Then open `http://localhost:8000/gpu-performance/demo/`.
 
 `npm run demo` now mounts the adaptive governor against the shared 3D harbor
-scene from `@plasius/gpu-shared` so quality changes are visible, while
+scene through the public `@plasius/gpu-shared` package surface so quality
+changes are visible, while
 `npm run demo:example` keeps the console example path.
 
 ## What It Solves
