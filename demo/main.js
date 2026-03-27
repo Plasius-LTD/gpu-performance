@@ -127,19 +127,17 @@ function describeState(state) {
       flagMotion: clothSnapshot.currentLevel.config.flagMotion,
       reflectionStrength: lightingSnapshot.currentLevel.config.reflectionStrength,
       shadowAccent: lightingSnapshot.currentLevel.config.shadowAccent,
-      skyTop: decision.pressureLevel === "stable" ? "#eef6fb" : "#e4edf2",
-      skyMid: decision.pressureLevel === "stable" ? "#bfd3df" : "#b2c3cd",
-      skyBottom: "#7ea2b5",
-      seaTop: "#215066",
-      seaMid: "#103a4e",
-      seaBottom: "#082130",
       waterNear:
         fluidSnapshot.currentLevel.id === "high"
-          ? { r: 0.14, g: 0.41, b: 0.51 }
+          ? { r: 0.1, g: 0.27, b: 0.38 }
           : fluidSnapshot.currentLevel.id === "medium"
-            ? { r: 0.13, g: 0.36, b: 0.46 }
-            : { r: 0.12, g: 0.32, b: 0.4 },
-      waterFar: { r: 0.28, g: 0.52, b: 0.62 },
+            ? { r: 0.09, g: 0.24, b: 0.34 }
+            : { r: 0.08, g: 0.2, b: 0.29 },
+      waterFar: { r: 0.18, g: 0.35, b: 0.48 },
+      ambientMist: decision.pressureLevel === "stable"
+        ? "rgba(38, 61, 95, 0.14)"
+        : "rgba(58, 79, 118, 0.2)",
+      lanternReflectionStrength: fluidSnapshot.currentLevel.id === "high" ? 0.52 : 0.34,
     },
   };
 }
@@ -149,7 +147,7 @@ await mountHarborShowcase({
   packageName: "@plasius/gpu-performance",
   title: "Adaptive Performance in a 3D Harbor",
   subtitle:
-    "Family-coordinated 3D validation for the frame governor, with visual degradation applied to waves, flag motion, and lighting before core ship motion changes.",
+    "Family-coordinated moonlit harbor validation for the frame governor, with visual degradation applied to waves, flag motion, and lighting before core ship motion changes.",
   createState,
   updateState,
   describeState,
