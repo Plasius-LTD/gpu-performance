@@ -9,6 +9,20 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 ## [Unreleased]
 
 - **Added**
+  - (placeholder)
+
+- **Changed**
+  - (placeholder)
+
+- **Fixed**
+  - (placeholder)
+
+- **Security**
+  - (placeholder)
+
+## [0.1.4] - 2026-04-02
+
+- **Added**
   - Contract tests that lock the browser demo to the public
     `@plasius/gpu-shared` package surface.
 
@@ -150,3 +164,4 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 [0.1.1]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.1
 [0.1.2]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.2
 [0.1.3]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.3
+[0.1.4]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.4
