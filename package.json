@@ -1,6 +1,6 @@
 {
   "name": "@plasius/gpu-performance",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Device-negotiated GPU performance governor and quality ladder coordination for Plasius rendering stacks.",
   "type": "module",
   "sideEffects": false,
