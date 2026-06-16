@@ -6,6 +6,13 @@ export {
   representationBands,
 } from "./budget.js";
 export {
+  createWavefrontPathTracingBudgetAdapter,
+  normalizeWavefrontPathTracingBudgetConfig,
+  wavefrontPathTracingBudgetControlKeys,
+  wavefrontPathTracingDenoiseModes,
+  wavefrontPathTracingVisibilityProbeModes,
+} from "./wavefront.js";
+export {
   createGpuPerformanceGovernor,
   createPerformanceGovernor,
   defaultDomainOrder,

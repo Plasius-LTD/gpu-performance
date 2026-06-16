@@ -23,6 +23,18 @@ groups:
 - lighting sample budget
 - update cadence and temporal reuse
 
+The first wavefront-path slice now publishes an explicit control set for:
+
+- `maxBounceDepth`
+- `samplesPerPixel`
+- `activeRayQueueCapacity`
+- `explicitLightSamples`
+- `visibilityProbeMode`
+- `bvhUpdateCadence`
+- `denoiseMode`
+- `temporalAccumulation`
+- `renderScale`
+
 ## Representation Tiers
 
 The contract should also preserve representation-tier context for the work being
@@ -57,6 +69,9 @@ Unit tests should prove that:
 - near-field work outranks far-field work when pressure rises
 - leaf or proxy work degrades before high-fan-out RT or lighting roots
 - temporal reuse and update cadence can scale independently from geometry cost
+- wavefront path budgets preserve emissive/environment correctness while
+  degrading optional probe/light-sampling controls first
+- bounce depth, probe mode, and render scale remain independently adjustable
 
 ## Implementation Notes
 
@@ -65,3 +80,8 @@ with `representationBand`, `qualityDimensions`, and `importanceSignals`
 metadata. The governor now uses those inputs when ranking degrade candidates,
 and manifest graph normalization preserves representation tiers instead of
 dropping them.
+
+The wavefront path-tracing adapter adds a concrete named contract on top of
+that metadata so downstream packages can express P0 controls without inventing
+package-local enums or flattening optional probe work into the same knob as
+emissive/environment correctness.

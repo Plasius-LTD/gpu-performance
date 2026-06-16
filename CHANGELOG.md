@@ -9,13 +9,19 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 ## [Unreleased]
 
 - **Added**
-  - (placeholder)
+  - Added a dedicated wavefront path-tracing budget adapter with explicit
+    controls for bounce depth, SPP, queue capacity, optional light probes,
+    BVH cadence, denoise mode, temporal accumulation, and render scale.
 
 - **Changed**
-  - (placeholder)
+  - Ray-tracing-first docs now distinguish generic budget metadata from the
+    concrete wavefront-path controls used to preserve emissive/environment
+    correctness while degrading optional variance-reduction work first.
 
 - **Fixed**
-  - (placeholder)
+  - Wavefront budget normalization now validates independent control changes for
+    depth, probe mode, and render scale instead of forcing callers through a
+    single coarse ladder dimension.
 
 - **Security**
   - (placeholder)
