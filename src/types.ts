@@ -360,6 +360,76 @@ export interface WorkerJobBudgetConfig {
 }
 
 /**
+ * Denoising modes for wavefront-path preview quality control.
+ */
+export type WavefrontPathTracingDenoiseMode =
+  | "off"
+  | "spatial"
+  | "spatiotemporal";
+
+/**
+ * Probe/light-sampling modes for optional variance reduction.
+ */
+export type WavefrontPathTracingVisibilityProbeMode =
+  | "disabled"
+  | "mis-balanced"
+  | "exclusive-emissive";
+
+/**
+ * Explicit wavefront path-tracing budget controls.
+ */
+export interface WavefrontPathTracingBudgetConfig {
+  maxBounceDepth: number;
+  samplesPerPixel: number;
+  activeRayQueueCapacity: number;
+  explicitLightSamples: number;
+  visibilityProbeMode: WavefrontPathTracingVisibilityProbeMode;
+  bvhUpdateCadence: number;
+  denoiseMode: WavefrontPathTracingDenoiseMode;
+  temporalAccumulation: boolean;
+  renderScale: number;
+  preserveEmissiveEnvironmentBaseline?: boolean;
+  degradeOptionalFirst?: boolean;
+}
+
+/**
+ * Stable summary of the protected-vs-optional wavefront budget semantics.
+ */
+export interface WavefrontPathTracingBudgetControlSummary {
+  preservesEmissiveEnvironmentBaseline: boolean;
+  degradeOptionalFirst: boolean;
+  degradeFirst: readonly string[];
+  independentControls: readonly string[];
+}
+
+/**
+ * Creation options for a wavefront path-tracing budget adapter.
+ */
+export interface WavefrontPathTracingBudgetAdapterOptions {
+  id: string;
+  domain?: PerformanceDomain;
+  authority?: ModuleAuthority;
+  importance?: ModuleImportance;
+  representationBand?: RepresentationBand;
+  qualityDimensions?: PerformanceQualityDimensions;
+  importanceSignals?: Readonly<PerformanceImportanceSignals>;
+  levels: readonly ModuleQualityLevel<WavefrontPathTracingBudgetConfig>[];
+  initialLevel?: number | string;
+  onLevelChange?: (
+    event: QualityLadderChangeEvent<WavefrontPathTracingBudgetConfig>
+  ) => void;
+}
+
+/**
+ * Specialized adapter for wavefront path-tracing quality controls.
+ */
+export interface WavefrontPathTracingBudgetAdapter
+  extends QualityLadderAdapter<WavefrontPathTracingBudgetConfig> {
+  getCurrentBudget(): WavefrontPathTracingBudgetConfig;
+  getControlSummary(): WavefrontPathTracingBudgetControlSummary;
+}
+
+/**
  * Options for creating a worker-job budget adapter.
  */
 export interface WorkerJobBudgetAdapterOptions {

@@ -4,10 +4,15 @@ import {
   createDeviceProfile,
   createGpuPerformanceGovernor,
   createQualityLadderAdapter,
+  createWavefrontPathTracingBudgetAdapter,
   createWorkerJobBudgetAdaptersFromManifest,
   createWorkerJobBudgetManifestGraph,
+  normalizeWavefrontPathTracingBudgetConfig,
   rayTracingQualityDimensions,
   representationBands,
+  wavefrontPathTracingBudgetControlKeys,
+  wavefrontPathTracingDenoiseModes,
+  wavefrontPathTracingVisibilityProbeModes,
 } from "../src/index.js";
 
 function createPressureGovernor(modules: Parameters<typeof createGpuPerformanceGovernor>[0]["modules"]) {
@@ -210,6 +215,143 @@ describe("ray-tracing-first budget contract", () => {
     expect(visual.getSnapshot().currentLevel.id).toBe("reduced");
     expect(physics.getSnapshot().currentLevel.id).toBe("fixed");
   });
+
+  it("publishes explicit wavefront path-tracing budget controls for the P0 slice", () => {
+    const adapter = createWavefrontPathTracingBudgetAdapter({
+      id: "wavefront-path-tracing",
+      levels: [
+        {
+          id: "reduced",
+          estimatedCostMs: 1.4,
+          config: {
+            maxBounceDepth: 3,
+            samplesPerPixel: 1,
+            activeRayQueueCapacity: 1024,
+            explicitLightSamples: 0,
+            visibilityProbeMode: "disabled",
+            bvhUpdateCadence: 4,
+            denoiseMode: "off",
+            temporalAccumulation: false,
+            renderScale: 0.7,
+          },
+        },
+        {
+          id: "full",
+          estimatedCostMs: 3.9,
+          config: {
+            maxBounceDepth: 6,
+            samplesPerPixel: 4,
+            activeRayQueueCapacity: 4096,
+            explicitLightSamples: 2,
+            visibilityProbeMode: "mis-balanced",
+            bvhUpdateCadence: 1,
+            denoiseMode: "spatiotemporal",
+            temporalAccumulation: true,
+            renderScale: 1,
+          },
+        },
+      ],
+    });
+
+    expect(wavefrontPathTracingBudgetControlKeys).toEqual([
+      "maxBounceDepth",
+      "samplesPerPixel",
+      "activeRayQueueCapacity",
+      "explicitLightSamples",
+      "visibilityProbeMode",
+      "bvhUpdateCadence",
+      "denoiseMode",
+      "temporalAccumulation",
+      "renderScale",
+    ]);
+    expect(wavefrontPathTracingDenoiseModes).toEqual([
+      "off",
+      "spatial",
+      "spatiotemporal",
+    ]);
+    expect(wavefrontPathTracingVisibilityProbeModes).toEqual([
+      "disabled",
+      "mis-balanced",
+      "exclusive-emissive",
+    ]);
+    expect(adapter.getCurrentBudget()).toMatchObject({
+      maxBounceDepth: 6,
+      samplesPerPixel: 4,
+      activeRayQueueCapacity: 4096,
+      explicitLightSamples: 2,
+      visibilityProbeMode: "mis-balanced",
+      bvhUpdateCadence: 1,
+      denoiseMode: "spatiotemporal",
+      temporalAccumulation: true,
+      renderScale: 1,
+      preserveEmissiveEnvironmentBaseline: true,
+      degradeOptionalFirst: true,
+    });
+  });
+
+  it("protects the active-ray emissive/environment baseline while degrading optional variance reduction first", () => {
+    const adapter = createWavefrontPathTracingBudgetAdapter({
+      id: "wavefront-path-tracing",
+      levels: [
+        {
+          id: "reduced",
+          estimatedCostMs: 1.4,
+          config: {
+            maxBounceDepth: 6,
+            samplesPerPixel: 2,
+            activeRayQueueCapacity: 4096,
+            explicitLightSamples: 0,
+            visibilityProbeMode: "disabled",
+            bvhUpdateCadence: 2,
+            denoiseMode: "off",
+            temporalAccumulation: false,
+            renderScale: 0.85,
+          },
+        },
+        {
+          id: "full",
+          estimatedCostMs: 4.2,
+          config: {
+            maxBounceDepth: 6,
+            samplesPerPixel: 4,
+            activeRayQueueCapacity: 4096,
+            explicitLightSamples: 2,
+            visibilityProbeMode: "mis-balanced",
+            bvhUpdateCadence: 1,
+            denoiseMode: "spatiotemporal",
+            temporalAccumulation: true,
+            renderScale: 1,
+          },
+        },
+      ],
+    });
+
+    expect(adapter.getControlSummary()).toEqual({
+      preservesEmissiveEnvironmentBaseline: true,
+      degradeOptionalFirst: true,
+      degradeFirst: [
+        "explicitLightSamples",
+        "visibilityProbeMode",
+        "denoiseMode",
+        "temporalAccumulation",
+        "renderScale",
+      ],
+      independentControls: wavefrontPathTracingBudgetControlKeys,
+    });
+
+    const governor = createPressureGovernor([adapter]);
+    applyPressure(governor);
+
+    expect(adapter.getCurrentBudget()).toMatchObject({
+      maxBounceDepth: 6,
+      activeRayQueueCapacity: 4096,
+      explicitLightSamples: 0,
+      visibilityProbeMode: "disabled",
+      denoiseMode: "off",
+      temporalAccumulation: false,
+      renderScale: 0.85,
+    });
+  });
 });
 
 describe("ray-tracing-first governor unit planning", () => {
@@ -327,5 +469,53 @@ describe("ray-tracing-first governor unit planning", () => {
     expect(decision.adjustments[0]?.moduleId).toBe("near-rt-reflections");
     expect(rayTracing.getSnapshot().currentLevel.id).toBe("reduced");
     expect(geometry.getSnapshot().currentLevel.id).toBe("high");
+  });
+
+  it("normalizes wavefront path-tracing controls so depth, probes, and render scale vary independently", () => {
+    const conservative = normalizeWavefrontPathTracingBudgetConfig("budget", {
+      maxBounceDepth: 2,
+      samplesPerPixel: 1,
+      activeRayQueueCapacity: 512,
+      explicitLightSamples: 0,
+      visibilityProbeMode: "disabled",
+      bvhUpdateCadence: 4,
+      denoiseMode: "off",
+      temporalAccumulation: false,
+      renderScale: 0.7,
+    });
+    const probeHeavy = normalizeWavefrontPathTracingBudgetConfig("budget", {
+      maxBounceDepth: 2,
+      samplesPerPixel: 1,
+      activeRayQueueCapacity: 512,
+      explicitLightSamples: 2,
+      visibilityProbeMode: "exclusive-emissive",
+      bvhUpdateCadence: 4,
+      denoiseMode: "off",
+      temporalAccumulation: false,
+      renderScale: 0.7,
+    });
+    const fullScale = normalizeWavefrontPathTracingBudgetConfig("budget", {
+      maxBounceDepth: 5,
+      samplesPerPixel: 3,
+      activeRayQueueCapacity: 2048,
+      explicitLightSamples: 2,
+      visibilityProbeMode: "mis-balanced",
+      bvhUpdateCadence: 1,
+      denoiseMode: "spatiotemporal",
+      temporalAccumulation: true,
+      renderScale: 1,
+    });
+
+    expect(conservative.maxBounceDepth).toBe(2);
+    expect(conservative.visibilityProbeMode).toBe("disabled");
+    expect(conservative.renderScale).toBe(0.7);
+
+    expect(probeHeavy.maxBounceDepth).toBe(2);
+    expect(probeHeavy.visibilityProbeMode).toBe("exclusive-emissive");
+    expect(probeHeavy.renderScale).toBe(0.7);
+
+    expect(fullScale.maxBounceDepth).toBe(5);
+    expect(fullScale.visibilityProbeMode).toBe("mis-balanced");
+    expect(fullScale.renderScale).toBe(1);
   });
 });

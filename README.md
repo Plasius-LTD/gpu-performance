@@ -158,6 +158,69 @@ That lets modules preserve representation tiers and degrade cheaper cadence,
 history, and RT-fidelity controls before more expensive geometry or
 authoritative work.
 
+Wavefront path tracing now has a dedicated adapter surface when a caller needs
+concrete controls rather than generic metadata:
+
+```ts
+import {
+  createWavefrontPathTracingBudgetAdapter,
+} from "@plasius/gpu-performance";
+
+const wavefrontBudget = createWavefrontPathTracingBudgetAdapter({
+  id: "wavefront-path-tracing",
+  levels: [
+    {
+      id: "reduced",
+      estimatedCostMs: 1.4,
+      config: {
+        maxBounceDepth: 3,
+        samplesPerPixel: 1,
+        activeRayQueueCapacity: 1024,
+        explicitLightSamples: 0,
+        visibilityProbeMode: "disabled",
+        bvhUpdateCadence: 4,
+        denoiseMode: "off",
+        temporalAccumulation: false,
+        renderScale: 0.7,
+      },
+    },
+    {
+      id: "full",
+      estimatedCostMs: 3.9,
+      config: {
+        maxBounceDepth: 6,
+        samplesPerPixel: 4,
+        activeRayQueueCapacity: 4096,
+        explicitLightSamples: 2,
+        visibilityProbeMode: "mis-balanced",
+        bvhUpdateCadence: 1,
+        denoiseMode: "spatiotemporal",
+        temporalAccumulation: true,
+        renderScale: 1,
+      },
+    },
+  ],
+});
+
+console.log(wavefrontBudget.getControlSummary().degradeFirst);
+console.log(wavefrontBudget.getCurrentBudget().renderScale);
+```
+
+The dedicated wavefront adapter names the P0 controls directly:
+
+- `maxBounceDepth`
+- `samplesPerPixel`
+- `activeRayQueueCapacity`
+- `explicitLightSamples`
+- `visibilityProbeMode`
+- `bvhUpdateCadence`
+- `denoiseMode`
+- `temporalAccumulation`
+- `renderScale`
+
+Its control summary keeps the active-ray emissive/environment baseline protected
+while degrading optional variance-reduction work first.
+
 ## Worker-Job Governance
 
 For `@plasius/gpu-*` packages that schedule work through `@plasius/gpu-worker`,
