@@ -12,6 +12,20 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
   - (placeholder)
 
 - **Changed**
+  - (placeholder)
+
+- **Fixed**
+  - (placeholder)
+
+- **Security**
+  - (placeholder)
+
+## [0.1.12] - 2026-07-10
+
+- **Added**
+  - (placeholder)
+
+- **Changed**
   - Updated `@plasius/gpu-shared` to the stable 1.x public runtime line.
   - Refreshed direct development tooling to the latest stable Node types,
     TypeScript ESLint, Vitest, ESLint, Globals, and tsx releases while keeping
@@ -253,3 +267,4 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 [0.1.9]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.9
 [0.1.10]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.10
 [0.1.11]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.11
+[0.1.12]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.12
