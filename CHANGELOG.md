@@ -12,7 +12,14 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
   - (placeholder)
 
 - **Changed**
-  - (placeholder)
+  - Updated `@plasius/gpu-shared` to the stable 1.x public runtime line.
+  - Refreshed direct development tooling to the latest stable Node types,
+    TypeScript ESLint, Vitest, ESLint, Globals, and tsx releases while keeping
+    TypeScript on the latest compatible 6.0.3 line.
+  - Regenerated the lockfile from a clean Node 24 install and added a published
+    runtime contract check for the browser demo's shared showcase API.
+  - TypeScript 7.0.2 remains blocked because the latest TypeScript ESLint
+    parser declares a peer range below 6.1.0; the upgrade was not forced.
 
 - **Fixed**
   - (placeholder)

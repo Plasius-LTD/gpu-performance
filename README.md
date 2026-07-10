@@ -21,6 +21,10 @@ Apache-2.0. ESM + CJS builds. TypeScript types included.
 npm install @plasius/gpu-performance
 ```
 
+The browser demo is validated against the current stable
+`@plasius/gpu-shared` 1.x public runtime line and consumes its exported harbor
+showcase API through the package import surface.
+
 ## Browser Demo
 
 ```bash
