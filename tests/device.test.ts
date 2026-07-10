@@ -23,6 +23,13 @@ describe("device profile", () => {
     );
   });
 
+  it("loads the current published gpu-shared runtime contract", async () => {
+    const shared = await import("@plasius/gpu-shared");
+
+    expect(typeof shared.mountGpuShowcase).toBe("function");
+    expect(shared.showcaseDemoModes).toContain("harbor");
+  });
+
   it("defaults XR hardware to immersive VR mode and 72 Hz", () => {
     const profile = createDeviceProfile({
       deviceClass: "xr-headset",
