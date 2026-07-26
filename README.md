@@ -466,3 +466,13 @@ GitHub Actions now carries the package delivery path:
 - `docs/adrs/*`: architecture decisions for package scope and control policy.
 - `docs/tdrs/*`: implementation records for the control loop and adapter model.
 - `docs/design/*`: design detail for rollout and integrations.
+
+<!-- BEGIN PLASIUS RELEASE INTEGRITY -->
+## Release integrity
+
+CI keeps the administrative contributor registry outside Git and npm package
+artifacts using exact, case-normalised path checks. CI runs on approved
+self-hosted runners. Release preparation and npm publication use GitHub-hosted
+runners with Node.js 24.18.0 LTS. CD remains disabled until the npm trusted
+publisher binding is verified and the legacy token fallback is removed.
+<!-- END PLASIUS RELEASE INTEGRITY -->
