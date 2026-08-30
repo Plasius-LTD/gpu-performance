@@ -30,15 +30,20 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
+    "zero-three": "node scripts/verify-zero-three.cjs --package --evidence-out release-artifacts/zero-three-evidence.json",
+    "zero-three:source": "node scripts/verify-zero-three.cjs --source-only",
+    "zero-three:test": "node --test tests/zero-three.test.cjs",
     "audit:eslint": "eslint . --max-warnings=0",
     "audit:deps": "npm ls --all --omit=optional --omit=peer > /dev/null 2>&1 || true",
     "audit:npm": "npm audit --audit-level=high --omit=dev",
     "audit:test": "vitest run --coverage",
     "lint": "eslint . --max-warnings=0",
     "prepare": "npm run build",
+    "test:privacy": "node --test tests/public-package-policy.test.cjs",
     "test:coverage": "vitest run --coverage",
-    "pack:check": "node scripts/verify-public-package.cjs",
-    "prepublishOnly": "npm run build && npm run pack:check"
+    "pack:check": "npm run privacy:check && node scripts/verify-public-package.cjs",
+    "privacy:check": "node scripts/verify-public-artifacts.cjs --source-only",
+    "prepublishOnly": "npm run build && npm run pack:check && npm run zero-three"
   },
   "keywords": [
     "webgpu",
@@ -62,7 +67,7 @@
   },
   "homepage": "https://github.com/Plasius-LTD/gpu-performance#readme",
   "dependencies": {
-    "@plasius/gpu-shared": "^1.0.14"
+    "@plasius/gpu-shared": "^1.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
