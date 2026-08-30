@@ -1,6 +1,7 @@
 node_modules/
 dist/
 coverage/
+release-artifacts/
 .npm-cache-packcheck/
 *.log
 # Private key material in cert directories (never commit)

@@ -12,12 +12,20 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
   - (placeholder)
 
 - **Changed**
+  - Raised `@plasius/gpu-shared` to its first released immutable Zero-Three
+    evidence version.
   - (placeholder)
 
 - **Fixed**
   - (placeholder)
 
 - **Security**
+  - Added permanent fail-closed Zero-Three validation across manifests,
+    dependency graphs, imports, declarations, aliases, bundles, npm tarballs,
+    SBOMs, and active documentation, with immutable CI/CD evidence and no
+    compatibility fallback.
+  - Replaced the legacy write-token publication path with exact-main npm OIDC
+    publication of a sealed tarball, SBOM, and attested Zero-Three evidence.
   - Pinned patched transitive npm dependencies to clear the current audit baseline.
   - Added fail-closed source and npm-package admission for the administrative contributor registry and pinned the CI/CD runtime to Node.js 24.18.0 LTS.
   - (placeholder)

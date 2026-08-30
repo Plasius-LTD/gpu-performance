@@ -442,7 +442,22 @@ npm run typecheck
 npm run test:coverage
 npm run build
 npm run pack:check
+npm run zero-three
 ```
+
+## Permanent Zero-Three invariant
+
+`@plasius/gpu-performance` is renderer-independent GPU budget policy. Three.js,
+Three.js subpaths, TSL, `@types/three`, `@react-three/*`, and packages whose
+dependency graph reaches Three.js are permanently prohibited from source,
+manifests, locks, installed dependency graphs, declarations, bundles, npm
+tarballs, SBOMs, tests, tooling, and active usage documentation. There is no
+compatibility mode, waiver, rollback, or fallback.
+
+Run `npm run zero-three:source` before dependency installation and `npm run
+zero-three` after building and installing to generate complete package evidence.
+The canonical architectural decision is the site ADR
+[ADR 0168](https://github.com/Plasius-LTD/plasius-ltd-site/blob/main/docs/adrs/adr-0168-three-js-is-prohibited-from-gpu-native-rendering.md).
 
 ## Release Automation
 
@@ -471,8 +486,10 @@ GitHub Actions now carries the package delivery path:
 ## Release integrity
 
 CI keeps the administrative contributor registry outside Git and npm package
-artifacts using exact, case-normalised path checks. CI runs on approved
-self-hosted runners. Release preparation and npm publication use GitHub-hosted
-runners with Node.js 24.18.0 LTS. CD remains disabled until the npm trusted
-publisher binding is verified and the legacy token fallback is removed.
+artifacts using exact, case-normalised path checks. Repository-owned pull
+requests and `main` execute on GitHub-hosted runners with Node.js 24.18.0 LTS.
+Release preparation lands metadata through the protected branch, waits for
+successful exact-commit CI, and then publishes the sealed package through npm
+OIDC from the `production` environment. The release retains and attests the
+SBOM and complete Zero-Three evidence; there is no legacy npm token fallback.
 <!-- END PLASIUS RELEASE INTEGRITY -->
