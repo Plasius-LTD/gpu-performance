@@ -12,14 +12,39 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
   - (placeholder)
 
 - **Changed**
-  - Bound npm publication to the exact prepared `main` commit after successful push-triggered CI.
+  - (placeholder)
+
+- **Fixed**
+  - Added exact-commit CI dispatch and disabled package-manager cache
+    finalization in both hosted validation jobs.
+  - (placeholder)
+
+- **Security**
+  - Pinned the npm OIDC release client to 11.6.2 and revalidate the exact
+    checked-out and remote `main` commit immediately before publication.
+  - (placeholder)
+
+## [0.1.13] - 2026-08-30
+
+- **Added**
+  - (placeholder)
+
+- **Changed**
+  - Raised `@plasius/gpu-shared` to its first released immutable Zero-Three
+    evidence version.
   - (placeholder)
 
 - **Fixed**
   - (placeholder)
 
 - **Security**
-  - Removed the npm write-token path, added a fail-closed npm 11.5.1-or-newer OIDC guard, and denied fork PR code access to self-hosted CI.
+  - Added permanent fail-closed Zero-Three validation across manifests,
+    dependency graphs, imports, declarations, aliases, bundles, npm tarballs,
+    SBOMs, and active documentation, with immutable CI/CD evidence and no
+    compatibility fallback.
+  - Replaced the legacy write-token publication path with exact-main npm OIDC
+    publication of a sealed tarball, SBOM, and attested Zero-Three evidence.
+  - Pinned patched transitive npm dependencies to clear the current audit baseline.
   - Added fail-closed source and npm-package admission for the administrative contributor registry and pinned the CI/CD runtime to Node.js 24.18.0 LTS.
   - (placeholder)
 
@@ -271,3 +296,4 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 [0.1.10]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.10
 [0.1.11]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.11
 [0.1.12]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.12
+[0.1.13]: https://github.com/Plasius-LTD/gpu-performance/releases/tag/v0.1.13

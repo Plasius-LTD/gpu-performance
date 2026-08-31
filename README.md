@@ -442,7 +442,22 @@ npm run typecheck
 npm run test:coverage
 npm run build
 npm run pack:check
+npm run zero-three
 ```
+
+## Permanent Zero-Three invariant
+
+`@plasius/gpu-performance` is renderer-independent GPU budget policy. Three.js,
+Three.js subpaths, TSL, `@types/three`, `@react-three/*`, and packages whose
+dependency graph reaches Three.js are permanently prohibited from source,
+manifests, locks, installed dependency graphs, declarations, bundles, npm
+tarballs, SBOMs, tests, tooling, and active usage documentation. There is no
+compatibility mode, waiver, rollback, or fallback.
+
+Run `npm run zero-three:source` before dependency installation and `npm run
+zero-three` after building and installing to generate complete package evidence.
+The canonical architectural decision is the site ADR
+[ADR 0168](https://github.com/Plasius-LTD/plasius-ltd-site/blob/main/docs/adrs/adr-0168-three-js-is-prohibited-from-gpu-native-rendering.md).
 
 ## Release Automation
 
@@ -471,10 +486,11 @@ GitHub Actions now carries the package delivery path:
 ## Release integrity
 
 CI keeps the administrative contributor registry outside Git and npm package
-artifacts using exact, case-normalised path checks. CI runs on approved
-self-hosted runners for same-repository pull requests and `main`; fork PR code
-is denied. Publication uses the GitHub-hosted `production` job with Node 24 and
-npm 11.5.1 or newer. It is token-free and proceeds only while the prepared SHA
-is the exact `main` head after successful push-triggered CI. Do not dispatch CD
-until the npm trusted-publisher binding is verified.
+artifacts using exact, case-normalised path checks. Repository-owned pull
+requests and `main` execute on GitHub-hosted runners with Node.js 24.18.0 LTS
+and explicit cache finalization disabled.
+Release preparation lands metadata through the protected branch, waits for
+successful exact-commit CI, and then publishes the sealed package through npm
+OIDC from the `production` environment with a pinned npm 11.6.2 client. The release retains and attests the
+SBOM and complete Zero-Three evidence; there is no legacy npm token fallback.
 <!-- END PLASIUS RELEASE INTEGRITY -->
