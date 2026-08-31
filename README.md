@@ -487,9 +487,10 @@ GitHub Actions now carries the package delivery path:
 
 CI keeps the administrative contributor registry outside Git and npm package
 artifacts using exact, case-normalised path checks. Repository-owned pull
-requests and `main` execute on GitHub-hosted runners with Node.js 24.18.0 LTS.
+requests and `main` execute on GitHub-hosted runners with Node.js 24.18.0 LTS
+and explicit cache finalization disabled.
 Release preparation lands metadata through the protected branch, waits for
 successful exact-commit CI, and then publishes the sealed package through npm
-OIDC from the `production` environment. The release retains and attests the
+OIDC from the `production` environment with a pinned npm 11.6.2 client. The release retains and attests the
 SBOM and complete Zero-Three evidence; there is no legacy npm token fallback.
 <!-- END PLASIUS RELEASE INTEGRITY -->
