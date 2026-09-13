@@ -1,5 +1,16 @@
 export { createDeviceProfile, negotiateFrameTarget } from "./device.js";
 export {
+  normalizeWavefrontAdaptiveBudgetPolicy,
+  composeWavefrontAdaptiveImportance,
+  quantizeWavefrontAdaptiveSamples,
+} from "./adaptive.js";
+export type {
+  WavefrontAdaptiveBudgetOptions,
+  WavefrontAdaptiveBudgetPolicy,
+  WavefrontAdaptiveClassifierPolicy,
+  WavefrontAdaptiveImportanceEvidence,
+} from "./adaptive.js";
+export {
   motionClasses,
   normalizePerformanceBudgetMetadata,
   rayTracingQualityDimensions,
