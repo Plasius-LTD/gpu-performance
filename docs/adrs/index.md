@@ -7,3 +7,4 @@
 - [ADR-0005: Worker-Job-First Governance](./adr-0005-worker-job-first-governance.md)
 - [ADR-0006: Multi-Dimensional LOD and Importance Governance](./adr-0006-multi-dimensional-lod-and-importance-governance.md)
 - [ADR-0007: Hosted OIDC Package Publication](./adr-0007-hosted-oidc-package-publication.md)
+- [ADR-0008: Per-Pixel Budget Policy](./adr-0008-per-pixel-budget-policy.md)

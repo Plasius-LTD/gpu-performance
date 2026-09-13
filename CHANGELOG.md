@@ -9,6 +9,10 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 ## [Unreleased]
 
 - **Added**
+  - Experimental immutable per-pixel sample-budget policy with bounded tiers,
+    independent sequence period/effective ceiling, conservative importance and
+    classifier no-op reasons. Adds no governor loop, GPU allocation or renderer
+    enablement; GPU integration and matched-quality qualification remain pending.
   - (placeholder)
 
 - **Changed**

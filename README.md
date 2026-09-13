@@ -54,6 +54,47 @@ changes are visible, while
 
 ## Usage
 
+### Experimental per-pixel sampling policy
+
+The pure `normalizeWavefrontAdaptiveBudgetPolicy`,
+`composeWavefrontAdaptiveImportance` and `quantizeWavefrontAdaptiveSamples`
+helpers extend the existing wavefront budgeting contract. They do not start a
+governor, allocate GPU resources or enable adaptive rendering in Product Studio.
+Supply the effective ceiling from the existing governor; the configured maximum
+remains the sequence period. For example:
+
+```ts
+import {
+  normalizeWavefrontAdaptiveBudgetPolicy,
+  composeWavefrontAdaptiveImportance,
+  quantizeWavefrontAdaptiveSamples,
+} from "@plasius/gpu-performance";
+
+const policy = normalizeWavefrontAdaptiveBudgetPolicy(32, { enabled: true }, 16);
+// Configured sequence period is still 32; eligible budgets are 2/4/8/16.
+const priority = composeWavefrontAdaptiveImportance(policy, {
+  focusImportance: 0.5,
+  requiredImportance: 1, // Conservatively protected geometry receives full SPP.
+});
+const target = policy.minimumSamplesPerPixel
+  + priority * (policy.maximumSamplesPerPixel - policy.minimumSamplesPerPixel);
+const budget = quantizeWavefrontAdaptiveSamples(policy, target, 0.3); // 16
+```
+
+The threshold above is illustrative. The GPU scheduler must supply independent,
+spatially scrambled and frame-rotated thresholds and enforce environment/material
+floors before quantization. It must preserve pixel/sample identity and normalize
+by actual completed camera samples. Invalid classifier evidence omits only its
+own reduction. Exact minimum/maximum endpoints and power-of-two interior tiers
+avoid bias at non-power-of-two bounds; effective ceiling changes preserve this.
+
+The remote parent flag `renderer.sampling.adaptivePerPixel.enabled` remains off.
+No speedup or memory saving is established by these CPU policy helpers. See the
+[policy design](docs/design/per-pixel-budget-policy.md) and
+[ADR 0008](docs/adrs/adr-0008-per-pixel-budget-policy.md) for ownership and gates.
+
+### Existing governor and adapters
+
 ```ts
 import {
   createDeviceProfile,
