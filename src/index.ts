@@ -1,4 +1,6 @@
 export { createDeviceProfile, negotiateFrameTarget } from "./device.js";
+export { normalizeWavefrontRefinementPolicy, planWavefrontRefinement, wavefrontRefinementImportance } from './refinement.js';
+export type { WavefrontRefinementOptions, WavefrontRefinementPolicy, WavefrontRefinementInput, WavefrontRefinementPlan } from './refinement.js';
 export {
   normalizeWavefrontAdaptiveBudgetPolicy,
   composeWavefrontAdaptiveImportance,

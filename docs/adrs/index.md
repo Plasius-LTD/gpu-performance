@@ -8,3 +8,4 @@
 - [ADR-0006: Multi-Dimensional LOD and Importance Governance](./adr-0006-multi-dimensional-lod-and-importance-governance.md)
 - [ADR-0007: Hosted OIDC Package Publication](./adr-0007-hosted-oidc-package-publication.md)
 - [ADR-0008: Per-Pixel Budget Policy](./adr-0008-per-pixel-budget-policy.md)
+- [ADR-0009: Coverage-first refinement planning](./adr-0009-coverage-first-refinement.md)
