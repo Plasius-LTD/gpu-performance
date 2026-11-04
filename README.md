@@ -523,6 +523,17 @@ GitHub Actions now carries the package delivery path:
 - `docs/tdrs/*`: implementation records for the control loop and adapter model.
 - `docs/design/*`: design detail for rollout and integrations.
 
+Experimental progressive sampling uses `normalizeWavefrontRefinementPolicy`,
+`planWavefrontRefinement` and `wavefrontRefinementImportance`. A caller resolves
+the independent default-off progressive/stationary/performance/foveation flags,
+supplies current interaction state, the existing negotiated ceiling/budget and
+completed work-unit cost. Plans require one sample everywhere before focus work;
+stationary plans let all pixels reach the configured total. No timer or second
+governor is created here. Zero/omitted budget disables reduction; a mandatory
+unit can overrun and reports it. See the [contract](docs/design/progressive-refinement-budget.md)
+and [ADR0009](docs/adrs/adr-0009-coverage-first-refinement.md). GPU integration,
+native qualification and released consumer adoption remain separate gates.
+
 <!-- BEGIN PLASIUS RELEASE INTEGRITY -->
 ## Release integrity
 

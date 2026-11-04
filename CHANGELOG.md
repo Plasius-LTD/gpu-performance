@@ -9,6 +9,9 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 ## [Unreleased]
 
 - **Added**
+  - Experimental coverage-first refinement plans: one sample everywhere, bounded
+    focus work during interaction, whole-screen stationary catch-up, immutable
+    sequence periods and explicit minimum-work budget-overrun diagnostics.
   - Experimental immutable per-pixel sample-budget policy with bounded tiers,
     independent sequence period/effective ceiling, conservative importance and
     classifier no-op reasons. Adds no governor loop, GPU allocation or renderer
@@ -23,6 +26,8 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
   - (placeholder)
 
 - **Security**
+  - Patched development-tool dependency advisories; runtime dependency ownership
+    and permanent Zero-Three enforcement remain unchanged.
   - (placeholder)
 
 ## [0.1.14] - 2026-08-31
