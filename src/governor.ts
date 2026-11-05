@@ -901,28 +901,29 @@ export function createGpuPerformanceGovernor(
   ): PerformanceAdjustmentRecord[] => {
     const context = createContext("recover", "recovering", metrics, workerGraph);
 
-    while (recoveryStack.length > 0) {
-      const moduleId = recoveryStack[recoveryStack.length - 1];
+    for (let index = recoveryStack.length - 1; index >= 0; index -= 1) {
+      const moduleId = recoveryStack[index];
       if (!moduleId) {
-        recoveryStack.pop();
+        recoveryStack.splice(index, 1);
         continue;
       }
 
       const module = modules.get(moduleId);
       if (!module) {
-        recoveryStack.pop();
+        recoveryStack.splice(index, 1);
         continue;
       }
 
       try {
+        if (module.canStepUp?.(context) === false) continue;
         const adjustment = module.stepUp(context);
-        recoveryStack.pop();
+        recoveryStack.splice(index, 1);
 
         if (adjustment) {
           return [adjustment];
         }
       } catch {
-        recoveryStack.pop();
+        recoveryStack.splice(index, 1);
         appendError(
           createErrorRecord({
             cycle,
