@@ -172,6 +172,14 @@ Custom adapters may implement `canStepUp(context)`; refusal retains pending
 recovery and lets other eligible modules recover. Without this option or hook,
 existing recovery behaviour remains unchanged.
 
+Hosts can reserve execution headroom without changing their cadence target using
+`target.frameBudgetRatio` (greater than zero and at most one). For a negotiated
+24 FPS target, `0.9` starts reduction above 37.5 ms and admits recovery below
+34.5 ms. Omit it to retain the existing thresholds. Supply the supported/preferred
+frame-rate buckets for a non-default cadence. Shorter existing sample windows and
+cooldowns let rapidly changing camera workloads respond earlier; they remain host
+policy. Keep the ladder's recovery reserve consistent with this execution reserve.
+
 Ray-tracing-first budget metadata is part of the public contract:
 
 - `representationBands`: `near`, `mid`, `far`, `horizon`

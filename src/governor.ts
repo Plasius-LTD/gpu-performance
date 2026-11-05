@@ -627,6 +627,7 @@ export function createGpuPerformanceGovernor(
     preferredFrameRates: options.target?.preferredFrameRates,
     minimumFrameRate: options.target?.minimumFrameRate,
     maximumFrameRate: options.target?.maximumFrameRate,
+    frameBudgetRatio: options.target?.frameBudgetRatio,
   });
 
   const modules = new Map<string, PerformanceModuleAdapter>();

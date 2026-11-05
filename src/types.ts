@@ -173,6 +173,8 @@ export interface FrameTargetNegotiationOptions {
   preferredFrameRates?: readonly number[];
   minimumFrameRate?: number;
   maximumFrameRate?: number;
+  /** Optional execution reserve in (0, 1]; omission preserves legacy thresholds. */
+  frameBudgetRatio?: number;
 }
 
 /**

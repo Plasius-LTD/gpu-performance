@@ -14,5 +14,11 @@ measurements separately, actual motion settings/SPP, p95/max/misses, allocations
 and exact full stationary HDR/display restoration. Diagnostics are separate from
 un-instrumented timing runs. No target is inferred solely from fewer rays.
 
+A rising-load regression passes the host's explicit 24 FPS buckets and 90%
+execution reserve through the governor, then verifies reduction before the full
+41.67 ms interval is exceeded. Device tests retain the default thresholds and
+reject invalid reserves. Physical trajectories include scene-relative orbit and
+zoom; a small world-space camera displacement alone is insufficient qualification.
+
 Local evidence is not a release. Require source LCOV>=80%, types/lint/build/tests,
 audit/package checks and approved exact-main CI/CD before public consumption.

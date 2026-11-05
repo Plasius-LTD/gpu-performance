@@ -12,6 +12,7 @@ const context = (milliseconds: number): PerformanceAdjustmentContext => ({
     downgradeFrameTimeMs:43.75,upgradeFrameTimeMs:38.33,candidateFrameRates:[24],rationale:[]},
 });
 const levels = [{id:'low',config:{}},{id:'high',config:{}}];
+const hostTarget = {minimumFrameRate:24,maximumFrameRate:24,preferredFrameRates:[24],supportedFrameRates:[24],deviceRefreshRateHz:24};
 
 describe('measured quality recovery',()=>{
   it('learns the cost ratio across a downgrade and retries only when new headroom fits',()=>{
@@ -47,7 +48,7 @@ describe('measured quality recovery',()=>{
     const a=createQualityLadderAdapter({id:'a',domain:'resolution',levels});
     const b=createQualityLadderAdapter({id:'b',domain:'shadows',levels});
     const governor=createGpuPerformanceGovernor({device:{supportsWebGpu:true},
-      target:{minimumFrameRate:24,maximumFrameRate:24},modules:[a,{...b,canStepUp:()=>allow}],
+      target:hostTarget,modules:[a,{...b,canStepUp:()=>allow}],
       adaptation:{sampleWindowSize:1,minimumSamplesBeforeAdjustment:1,degradeCooldownFrames:1,
         upgradeCooldownFrames:1,minStableFramesForRecovery:1,maxStepChangesPerCycle:1,trendSensitivityMs:50}});
     for(let i=0;i<4;i++)governor.recordFrame({frameTimeMs:70});
@@ -84,10 +85,19 @@ it('retains the existing64-level bound and rejects malformed recovery options',(
 it('isolates a throwing recovery hook without blocking remaining modules',()=>{
  const a=createQualityLadderAdapter({id:'a',domain:'resolution',levels});
  const b=createQualityLadderAdapter({id:'b',domain:'shadows',levels});
- const governor=createGpuPerformanceGovernor({device:{supportsWebGpu:true},target:{minimumFrameRate:24,maximumFrameRate:24},
+ const governor=createGpuPerformanceGovernor({device:{supportsWebGpu:true},target:hostTarget,
   modules:[a,{...b,canStepUp(){throw new Error('unavailable');}}],adaptation:{sampleWindowSize:1,minimumSamplesBeforeAdjustment:1,degradeCooldownFrames:1,upgradeCooldownFrames:1,minStableFramesForRecovery:1,maxStepChangesPerCycle:1}});
  for(let i=0;i<4;i++)governor.recordFrame({frameTimeMs:70});
  for(let i=0;i<10;i++)governor.recordFrame({frameTimeMs:10});
  expect(a.getCurrentLevel().id).toBe('high');expect(b.getCurrentLevel().id).toBe('low');
  expect(governor.getState().recentErrors.some(e=>e.code==='MODULE_STEP_UP_FAILED')).toBe(true);
+});
+it('propagates host execution headroom through the governor before rising load misses cadence',()=>{
+ const adapter=createQualityLadderAdapter({id:'quality',domain:'resolution',levels});
+ const governor=createGpuPerformanceGovernor({device:{supportsWebGpu:true},modules:[adapter],
+  target:{...hostTarget,frameBudgetRatio:.9},
+  adaptation:{sampleWindowSize:8,minimumSamplesBeforeAdjustment:4,degradeCooldownFrames:2,trendSensitivityMs:1000/24}});
+ expect(governor.getTarget().downgradeFrameTimeMs).toBeCloseTo(37.5);
+ for(let frameTimeMs=30;frameTimeMs<41;frameTimeMs+=.25)governor.recordFrame({frameTimeMs});
+ expect(adapter.getCurrentLevel().id).toBe('low');
 });

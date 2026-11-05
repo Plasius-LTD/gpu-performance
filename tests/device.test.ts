@@ -81,3 +81,16 @@ describe("device profile", () => {
     ).toThrow(/maximumFrameRate must be greater than or equal to minimumFrameRate/);
   });
 });
+
+it('uses explicit host frame headroom without changing the cadence target or defaults',()=>{
+ const base={minimumFrameRate:24,maximumFrameRate:24,preferredFrameRates:[24],supportedFrameRates:[24]};
+ const target=negotiateFrameTarget({...base,frameBudgetRatio:.9});
+ expect(target.targetFrameRate).toBe(24);
+ expect(target.targetFrameTimeMs).toBeCloseTo(1000/24);
+ expect(target.downgradeFrameTimeMs).toBeCloseTo(37.5);
+ expect(target.upgradeFrameTimeMs).toBeCloseTo(37.5*.92);
+ expect(negotiateFrameTarget(base).downgradeFrameTimeMs).toBeCloseTo((1000/24)*1.05);
+ for(const frameBudgetRatio of [0,-1,1.1,NaN,Infinity,'1',null]){
+  expect(()=>negotiateFrameTarget({...base,frameBudgetRatio:frameBudgetRatio as any})).toThrow(/frameBudgetRatio/);
+ }
+});

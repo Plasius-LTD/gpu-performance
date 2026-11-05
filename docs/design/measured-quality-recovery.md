@@ -45,3 +45,14 @@ glob cancellation/matching, brace expansion and source-map parsing. Only affecte
 tooling and required transitives were advanced to patched versions; production
 dependencies were unchanged. Full audit, tests, types, lint and package checks
 passed afterward. Site dependency-refresh hold2330 remains unchanged.
+
+## Early adaptation under changing views
+
+A30second orbit/zoom trajectory revealed80 steady deadline misses: scale.64 became
+more expensive as density increased, but default downgrade thresholds allow5%
+lateness and average24 frames. The lower scale stayed within36.9ms. Add optional
+`target.frameBudgetRatio` in(0,1]: explicit host reserve sets the downgrade
+threshold to that fraction of the frame interval and recovery below it. Omission
+retains existing thresholds. The host can use the existing shorter sample-window
+and cooldown settings for rapidly changing views. Test actual targets/defaults and
+invalid ratios before implementation, then rerun orbit and high-SPP workloads.

@@ -19,6 +19,11 @@ execution. Unknown levels remain discoverable. Generic adapters may expose
 `canStepUp(context)`; a refusal retains recovery state and does not block other
 eligible adapters. The existing governor owns adjustment order and cooldowns.
 
+Hosts may also supply `target.frameBudgetRatio` to reserve part of the negotiated
+interval for workload variation. It adjusts downgrade and recovery thresholds,
+not the cadence target. Existing window/cooldown settings control response delay;
+the inspection host supplies these values. Omission preserves prior thresholds.
+
 ## Consequences
 
 Improved engines can restore quality through measured headroom with no host loop.
