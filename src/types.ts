@@ -173,6 +173,8 @@ export interface FrameTargetNegotiationOptions {
   preferredFrameRates?: readonly number[];
   minimumFrameRate?: number;
   maximumFrameRate?: number;
+  /** Optional execution reserve in (0, 1]; omission preserves legacy thresholds. */
+  frameBudgetRatio?: number;
 }
 
 /**
@@ -302,6 +304,8 @@ export interface PerformanceModuleAdapter<Payload = unknown> {
   authority: ModuleAuthority;
   importance: ModuleImportance;
   getSnapshot(): PerformanceModuleSnapshot<Payload>;
+  /** Optional upgrade admission. A refusal retains pending governor recovery. */
+  canStepUp?(context: PerformanceAdjustmentContext): boolean;
   stepDown(
     context: PerformanceAdjustmentContext
   ): PerformanceAdjustmentRecord<Payload> | null;
@@ -333,7 +337,14 @@ export interface QualityLadderAdapterOptions<Payload = unknown> {
   importanceSignals?: Readonly<PerformanceImportanceSignals>;
   levels: readonly ModuleQualityLevel<Payload>[];
   initialLevel?: number | string;
+  recoveryBudget?: QualityRecoveryBudgetOptions;
   onLevelChange?: (event: QualityLadderChangeEvent<Payload>) => void;
+}
+
+/** Opt-in measured recovery; unknown levels remain discoverable. */
+export interface QualityRecoveryBudgetOptions {
+  /** Fraction of the negotiated frame interval reserved for projected work, in (0, 1]. */
+  headroomRatio: number;
 }
 
 /**
@@ -345,6 +356,9 @@ export interface QualityLadderAdapter<Payload = unknown>
   qualityDimensions?: PerformanceQualityDimensions;
   importanceSignals?: Readonly<PerformanceImportanceSignals>;
   getCurrentLevel(): ModuleQualityLevel<Payload>;
+  /** Record completed execution at the current level before governor.recordFrame. */
+  recordFrameTime(frameTimeMs: number): void;
+  canStepUp(context: PerformanceAdjustmentContext): boolean;
 }
 
 /**

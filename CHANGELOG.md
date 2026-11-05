@@ -9,7 +9,8 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 ## [Unreleased]
 
 - **Added**
-  - (placeholder)
+  - Opt-in measured quality recovery, completed-frame cost recording and retryable adapter recovery admission.
+  - Optional frame-budget headroom for earlier adaptation under changing workloads, preserving the negotiated cadence and default thresholds.
 
 - **Changed**
   - Refreshed compatible @plasius/* lockfile resolutions to the latest published releases.
@@ -19,7 +20,7 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
   - (placeholder)
 
 - **Security**
-  - (placeholder)
+  - Resolve demonstrated build/test advisories in Vitest, Vite, glob matching, brace expansion and source-map parsing; production dependencies remain unchanged.
 
 ## [0.1.14] - 2026-08-31
 

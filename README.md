@@ -144,6 +144,42 @@ for (const [index, frameTimeMs] of [12.8, 13.1, 18.4, 18.9, 19.2, 18.8, 18.1, 17
 }
 ```
 
+For a ladder whose quality levels have measured frame costs, opt into recovery
+admission to avoid repeatedly retrying an over-budget level:
+
+```ts
+const quality = createQualityLadderAdapter({
+  id: "interactive-quality",
+  domain: "resolution",
+  levels: [
+    { id: "preview", config: { scale: 0.5 } },
+    { id: "full", config: { scale: 1 } },
+  ],
+  recoveryBudget: { headroomRatio: 0.9 },
+});
+// Register quality with your governor. After each awaited frame, record its
+// execution duration before governor.recordFrame({ frameTimeMs }).
+quality.recordFrameTime(30);
+```
+
+The adapter pairs timings across downgrades, then admits a known higher level
+when its projected cost fits the chosen fraction of the negotiated frame budget.
+Unknown levels can still be explored. Faster execution reopens recovery without
+changing the product's target. Recreate the adapter when the workload or device
+changes. Keep input queue age separate from frame execution time. Cost estimates
+cannot guarantee a deadline when even minimum work exceeds the device budget.
+Custom adapters may implement `canStepUp(context)`; refusal retains pending
+recovery and lets other eligible modules recover. Without this option or hook,
+existing recovery behaviour remains unchanged.
+
+Hosts can reserve execution headroom without changing their cadence target using
+`target.frameBudgetRatio` (greater than zero and at most one). For a negotiated
+24 FPS target, `0.9` starts reduction above 37.5 ms and admits recovery below
+34.5 ms. Omit it to retain the existing thresholds. Supply the supported/preferred
+frame-rate buckets for a non-default cadence. Shorter existing sample windows and
+cooldowns let rapidly changing camera workloads respond earlier; they remain host
+policy. Keep the ladder's recovery reserve consistent with this execution reserve.
+
 Ray-tracing-first budget metadata is part of the public contract:
 
 - `representationBands`: `near`, `mid`, `far`, `horizon`

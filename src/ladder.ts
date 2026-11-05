@@ -11,6 +11,7 @@ import type {
   QualityLadderAdapterOptions,
 } from "./types.js";
 import { normalizePerformanceBudgetMetadata } from "./budget.js";
+import { createMeasuredQualityRecovery } from "./quality-recovery.js";
 import {
   assertEnumValue,
   assertIdentifier,
@@ -154,6 +155,7 @@ export function createQualityLadderAdapter<Payload>(
   const levels = [...options.levels];
   const metadata = normalizePerformanceBudgetMetadata("budget metadata", options);
   let currentLevelIndex = resolveLevelIndex(levels, options.initialLevel);
+  const recovery = createMeasuredQualityRecovery(levels.length, options.recoveryBudget);
 
   const emitChange = (
     context: PerformanceAdjustmentContext,
@@ -188,7 +190,9 @@ export function createQualityLadderAdapter<Payload>(
     }
 
     const previousLevelIndex = currentLevelIndex;
+    if (direction === "up" && !recovery.canRecover(currentLevelIndex, context)) return null;
     currentLevelIndex = nextLevelIndex;
+    if (direction === "down") recovery.reduced(previousLevelIndex, currentLevelIndex);
 
     const adjustment = buildAdjustment<Payload>(
       direction,
@@ -216,6 +220,12 @@ export function createQualityLadderAdapter<Payload>(
     importanceSignals: metadata.importanceSignals,
     getCurrentLevel() {
       return levels[currentLevelIndex]!;
+    },
+    recordFrameTime(frameTimeMs) {
+      recovery.record(currentLevelIndex, frameTimeMs);
+    },
+    canStepUp(context) {
+      return recovery.canRecover(currentLevelIndex, context);
     },
     getSnapshot() {
       return buildSnapshot(

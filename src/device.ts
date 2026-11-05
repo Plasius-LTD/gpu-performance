@@ -79,6 +79,10 @@ export function createDeviceProfile(input: DeviceProfileInput = {}): DeviceProfi
 export function negotiateFrameTarget(
   options: FrameTargetNegotiationOptions = {}
 ): FrameTargetProfile {
+  const frameBudgetRatio = readPositiveNumber("frameBudgetRatio", options.frameBudgetRatio);
+  if (frameBudgetRatio !== undefined && frameBudgetRatio > 1) {
+    throw new Error("frameBudgetRatio must be at most one.");
+  }
   const mode =
     options.mode === undefined
       ? "flat"
@@ -155,8 +159,8 @@ export function negotiateFrameTarget(
   }
 
   const targetFrameTimeMs = 1000 / targetFrameRate;
-  const downgradeMultiplier = mode === "flat" ? 1.05 : 1.03;
-  const upgradeMultiplier = mode === "flat" ? 0.92 : 0.95;
+  const downgradeMultiplier = frameBudgetRatio ?? (mode === "flat" ? 1.05 : 1.03);
+  const upgradeMultiplier = (frameBudgetRatio ?? 1) * (mode === "flat" ? 0.92 : 0.95);
 
   return Object.freeze({
     mode,
