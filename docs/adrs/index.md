@@ -8,3 +8,5 @@
 - [ADR-0006: Multi-Dimensional LOD and Importance Governance](./adr-0006-multi-dimensional-lod-and-importance-governance.md)
 - [ADR-0007: Hosted OIDC Package Publication](./adr-0007-hosted-oidc-package-publication.md)
 - [ADR-0010: Measured Quality Recovery](./adr-0010-measured-quality-recovery.md)
+
+- [ADR 0011: Conservative startup quality recovery](adr-0011-conservative-startup-recovery.md)

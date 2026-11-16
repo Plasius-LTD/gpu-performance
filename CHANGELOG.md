@@ -9,7 +9,7 @@ The format is based on **[Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 ## [Unreleased]
 
 - **Added**
-  - (placeholder)
+  - Opt-in recovery from conservative initial quality levels, with host-provided adjacent cost ratios for unmeasured upgrades.
 
 - **Changed**
   - (placeholder)

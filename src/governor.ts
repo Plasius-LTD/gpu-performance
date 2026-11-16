@@ -610,6 +610,9 @@ export function createGpuPerformanceGovernor(
   }
 
   validateTelemetryHooks(options.telemetry);
+  if (options.recoverInitialLevels !== undefined && typeof options.recoverInitialLevels !== 'boolean') {
+    throw new Error('recoverInitialLevels must be a boolean.');
+  }
 
   const device = createDeviceProfile(options.device);
   if (!device.supportsWebGpu) {
@@ -652,6 +655,8 @@ export function createGpuPerformanceGovernor(
   let lastDownCycle = Number.NEGATIVE_INFINITY;
   let lastUpCycle = Number.NEGATIVE_INFINITY;
   let recoveryStack: string[] = [];
+  // One bounded opportunity per opted-in module, independent of reduction history.
+  const initialRecovery = new Set(options.recoverInitialLevels ? modules.keys() : []);
   let recentErrors: GovernorErrorRecord[] = [];
   let recentFrameIds = new Set<string>();
   let recentFrameIdQueue: string[] = [];
@@ -902,29 +907,44 @@ export function createGpuPerformanceGovernor(
   ): PerformanceAdjustmentRecord[] => {
     const context = createContext("recover", "recovering", metrics, workerGraph);
 
-    for (let index = recoveryStack.length - 1; index >= 0; index -= 1) {
-      const moduleId = recoveryStack[index];
+    const pending = recoveryStack.map((moduleId, index) => ({ moduleId, index })).reverse();
+    const reduced = new Set(recoveryStack);
+    for (const moduleId of initialRecovery) {
+      if (!reduced.has(moduleId)) pending.push({ moduleId, index: -1 });
+    }
+    for (const { moduleId, index } of pending) {
+      const remove = () => {
+        if (index >= 0) recoveryStack.splice(index, 1);
+        else initialRecovery.delete(moduleId);
+      };
       if (!moduleId) {
-        recoveryStack.splice(index, 1);
+        remove();
         continue;
       }
 
       const module = modules.get(moduleId);
       if (!module) {
-        recoveryStack.splice(index, 1);
+        remove();
         continue;
       }
 
       try {
+        if (index < 0) {
+          const snapshot = module.getSnapshot();
+          if (snapshot.isAtMaximum || (snapshot.authority === 'authoritative' && !adaptation.allowAuthoritativeScaling)) {
+            remove();
+            continue;
+          }
+        }
         if (module.canStepUp?.(context) === false) continue;
         const adjustment = module.stepUp(context);
-        recoveryStack.splice(index, 1);
+        if (index >= 0 || !adjustment) remove();
 
         if (adjustment) {
           return [adjustment];
         }
       } catch {
-        recoveryStack.splice(index, 1);
+        remove();
         appendError(
           createErrorRecord({
             cycle,
@@ -1073,10 +1093,12 @@ export function createGpuPerformanceGovernor(
       }
 
       modules.set(module.id, module);
+      if (options.recoverInitialLevels) initialRecovery.add(module.id);
 
       return () => {
         modules.delete(module.id);
         recoveryStack = recoveryStack.filter((id) => id !== module.id);
+        initialRecovery.delete(module.id);
       };
     },
     getTarget() {
@@ -1105,6 +1127,8 @@ export function createGpuPerformanceGovernor(
       lastDownCycle = Number.NEGATIVE_INFINITY;
       lastUpCycle = Number.NEGATIVE_INFINITY;
       recoveryStack = [];
+      initialRecovery.clear();
+      if (options.recoverInitialLevels) for (const id of modules.keys()) initialRecovery.add(id);
       recentErrors = [];
       recentFrameIds = new Set();
       recentFrameIdQueue = [];
