@@ -345,6 +345,9 @@ export interface QualityLadderAdapterOptions<Payload = unknown> {
 export interface QualityRecoveryBudgetOptions {
   /** Fraction of the negotiated frame interval reserved for projected work, in (0, 1]. */
   headroomRatio: number;
+  /** Optional adjacent upper/lower work-cost estimates, one per upward step.
+   * Paired execution measurements supersede these estimates when available. */
+  initialCostRatios?: readonly number[];
 }
 
 /**
@@ -666,6 +669,9 @@ export interface GpuPerformanceGovernorOptions {
   device: DeviceProfileInput | DeviceProfile;
   target?: FrameTargetNegotiationOptions;
   modules?: readonly PerformanceModuleAdapter[];
+  /** Recover configured initial visual levels as measured headroom permits.
+   * Defaults to false; authoritative modules still require explicit scaling permission. */
+  recoverInitialLevels?: boolean;
   adaptation?: GovernorAdaptationOptions;
   telemetry?: PerformanceTelemetryHooks;
 }

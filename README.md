@@ -172,6 +172,22 @@ Custom adapters may implement `canStepUp(context)`; refusal retains pending
 recovery and lets other eligible modules recover. Without this option or hook,
 existing recovery behaviour remains unchanged.
 
+For latency-sensitive startup, select a conservative `initialLevel` and set
+`recoverInitialLevels: true` on the governor. This opt-in adds pending recovery
+for registered modules without inventing frame samples. Normal cooldowns,
+measured admission, thermal pressure and authoritative-system protection still
+apply. Historical downgrades recover first. Removing a module removes its pending
+startup recovery; resetting the governor starts admission again from its current
+level. The default remains recovery of governor-issued downgrades only.
+
+Set `recoveryBudget.initialCostRatios` to one positive finite cost ratio per
+adjacent upward step when the host can estimate unmeasured work. For example,
+scales 0.5 and 1 at equal samples use `[4]`, while 1 and 2 SPP at equal scale use
+`[2]`. Ratios are copied and constrain the first upgrade; paired completed-frame
+measurements replace them after a downgrade. They are estimates, not guaranteed
+frame times. Engine improvements automatically reopen admission through measured
+execution times, without changing the host's frame-rate target.
+
 Hosts can reserve execution headroom without changing their cadence target using
 `target.frameBudgetRatio` (greater than zero and at most one). For a negotiated
 24 FPS target, `0.9` starts reduction above 37.5 ms and admits recovery below

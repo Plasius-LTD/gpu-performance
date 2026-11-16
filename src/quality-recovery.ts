@@ -11,8 +11,14 @@ export function createMeasuredQualityRecovery(
   if (headroom === undefined || headroom > 1) {
     throw new Error("recoveryBudget.headroomRatio must be in (0, 1].");
   }
+  const initialRatios = options?.initialCostRatios;
+  if (initialRatios !== undefined && (!Array.isArray(initialRatios) ||
+      initialRatios.length !== levelCount - 1 ||
+      Array.from(initialRatios).some(value => typeof value !== 'number' || !Number.isFinite(value) || value <= 0))) {
+    throw new Error('recoveryBudget.initialCostRatios must contain one finite positive ratio per upward step.');
+  }
   const lastTimes: Array<number | undefined> = new Array(levelCount);
-  const recoveryRatios: Array<number | undefined> = new Array(levelCount);
+  const recoveryRatios: Array<number | undefined> = initialRatios ? [...initialRatios] : new Array(levelCount);
   let pending: { index: number; upperTime: number } | undefined;
 
   return {
